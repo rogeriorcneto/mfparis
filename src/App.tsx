@@ -9,10 +9,11 @@ import {
   MagnifyingGlassIcon,
   BellIcon,
   XMarkIcon,
-  PlusIcon
+  PlusIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline'
 
-type ViewType = 'dashboard' | 'funil' | 'clientes' | 'automacoes' | 'mapa' | 'prospeccao'
+type ViewType = 'dashboard' | 'funil' | 'clientes' | 'automacoes' | 'mapa' | 'prospeccao' | 'tarefas' | 'social' | 'integracoes'
 
 interface Cliente {
   id: number
@@ -130,6 +131,18 @@ interface JobAutomacao {
   agendadoPara: string
   templateId?: number
   campanhaId?: number
+}
+
+interface Tarefa {
+  id: number
+  titulo: string
+  descricao?: string
+  data: string
+  hora?: string
+  tipo: 'ligacao' | 'reuniao' | 'email' | 'whatsapp' | 'follow-up' | 'outro'
+  status: 'pendente' | 'concluida'
+  prioridade: 'alta' | 'media' | 'baixa'
+  clienteId?: number
 }
 
 interface FunilViewProps {
@@ -253,6 +266,30 @@ function App() {
   ])
 
   const [jobs, setJobs] = useState<JobAutomacao[]>([])
+  const [tarefas, setTarefas] = useState<Tarefa[]>([
+    {
+      id: 1,
+      titulo: 'Follow-up SuperBH',
+      descricao: 'Ligar para João Silva sobre catálogo',
+      data: new Date().toISOString().split('T')[0],
+      hora: '10:00',
+      tipo: 'ligacao',
+      status: 'pendente',
+      prioridade: 'alta',
+      clienteId: 1
+    },
+    {
+      id: 2,
+      titulo: 'Enviar proposta MegaMart',
+      descricao: 'Preparar proposta comercial',
+      data: new Date().toISOString().split('T')[0],
+      hora: '14:00',
+      tipo: 'email',
+      status: 'pendente',
+      prioridade: 'media',
+      clienteId: 2
+    }
+  ])
   const [formData, setFormData] = useState<FormData>({
     razaoSocial: '',
     nomeFantasia: '',
@@ -641,6 +678,12 @@ function App() {
             onCreateCampanha={(c: Campanha) => setCampanhas(prev => [c, ...prev])}
           />
         )
+      case 'tarefas':
+        return <TarefasView tarefas={tarefas} clientes={clientes} onUpdateTarefa={(t) => setTarefas(prev => prev.map(x => x.id === t.id ? t : x))} onAddTarefa={(t) => setTarefas(prev => [t, ...prev])} />
+      case 'social':
+        return <SocialSearchView />
+      case 'integracoes':
+        return <IntegracoesView />
       default:
         return <DashboardView clientes={clientes} metrics={dashboardMetrics} />
     }
@@ -741,6 +784,48 @@ function App() {
 	        Mapa
 	      </button>
 
+          <button
+            onClick={() => setActiveView('tarefas')}
+            className={`
+              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
+              ${activeView === 'tarefas'
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }
+            `}
+          >
+            <ChartBarIcon className="mr-3 h-5 w-5" />
+            Tarefas
+          </button>
+
+          <button
+            onClick={() => setActiveView('social')}
+            className={`
+              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
+              ${activeView === 'social'
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }
+            `}
+          >
+            <MagnifyingGlassIcon className="mr-3 h-5 w-5" />
+            Busca Social
+          </button>
+
+          <button
+            onClick={() => setActiveView('integracoes')}
+            className={`
+              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
+              ${activeView === 'integracoes'
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }
+            `}
+          >
+            <SparklesIcon className="mr-3 h-5 w-5" />
+            Integrações
+          </button>
+
           <div className="border-t border-gray-200 pt-4 mt-4">
             <button
               onClick={() => setShowAIModal(true)}
@@ -779,6 +864,9 @@ function App() {
             {activeView === 'automacoes' && 'Automações de Vendas'}
             {activeView === 'mapa' && 'Mapa de Leads'}
             {activeView === 'prospeccao' && 'Prospecção'}
+            {activeView === 'tarefas' && 'Tarefas e Agenda'}
+            {activeView === 'social' && 'Busca por Redes Sociais'}
+            {activeView === 'integracoes' && 'Integrações'}
           </h2>
           
           <div className="flex items-center space-x-4">
@@ -1180,6 +1268,111 @@ const DashboardView: React.FC<DashboardViewProps> = ({ clientes, metrics }) => {
         </div>
       </div>
 
+      {/* Metas de Vendas */}
+      {(() => {
+        const metaVendasMensal = 500000
+        const metaLeadsMensal = 20
+        const metaConversaoMensal = 15
+        const metaTicketMedio = 80000
+
+        const progressoVendas = Math.min((metrics.valorTotal / metaVendasMensal) * 100, 100)
+        const progressoLeads = Math.min((metrics.totalLeads / metaLeadsMensal) * 100, 100)
+        const progressoConversao = Math.min((metrics.taxaConversao / metaConversaoMensal) * 100, 100)
+        const progressoTicket = Math.min((metrics.ticketMedio / metaTicketMedio) * 100, 100)
+
+        const faltaVendas = Math.max(metaVendasMensal - metrics.valorTotal, 0)
+        const diasRestantesMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate()
+
+        const getBarColor = (pct: number) => {
+          if (pct >= 100) return 'bg-green-500'
+          if (pct >= 75) return 'bg-blue-500'
+          if (pct >= 50) return 'bg-yellow-500'
+          return 'bg-red-500'
+        }
+
+        const getStatusLabel = (pct: number) => {
+          if (pct >= 100) return { text: '✅ Meta atingida!', color: 'text-green-700 bg-green-50 border-green-200' }
+          if (pct >= 75) return { text: '🔥 Quase lá!', color: 'text-blue-700 bg-blue-50 border-blue-200' }
+          if (pct >= 50) return { text: '⚡ No caminho', color: 'text-yellow-700 bg-yellow-50 border-yellow-200' }
+          return { text: '⚠️ Atenção', color: 'text-red-700 bg-red-50 border-red-200' }
+        }
+
+        const statusVendas = getStatusLabel(progressoVendas)
+
+        return (
+          <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">🎯 Metas do Mês</h3>
+                <p className="text-sm text-gray-500 mt-1">{diasRestantesMes} dias restantes no mês</p>
+              </div>
+              <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${statusVendas.color}`}>
+                {statusVendas.text}
+              </span>
+            </div>
+
+            {/* Meta Principal - Vendas */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-apple border border-gray-200">
+              <div className="flex items-end justify-between mb-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Meta de Vendas Mensal</p>
+                  <p className="text-3xl font-bold text-gray-900">R$ {metrics.valorTotal.toLocaleString('pt-BR')}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-500">de R$ {metaVendasMensal.toLocaleString('pt-BR')}</p>
+                  <p className="text-2xl font-bold text-primary-600">{progressoVendas.toFixed(1)}%</p>
+                </div>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                <div className={`h-4 rounded-full transition-all duration-500 ${getBarColor(progressoVendas)}`} style={{ width: `${progressoVendas}%` }}></div>
+              </div>
+              {faltaVendas > 0 && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Faltam <span className="font-semibold text-gray-700">R$ {faltaVendas.toLocaleString('pt-BR')}</span> para bater a meta
+                  {diasRestantesMes > 0 && <> — média de <span className="font-semibold text-gray-700">R$ {Math.ceil(faltaVendas / diasRestantesMes).toLocaleString('pt-BR')}</span>/dia</>}
+                </p>
+              )}
+            </div>
+
+            {/* Metas Secundárias */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-apple border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-600">📋 Leads</p>
+                  <p className="text-sm font-bold text-gray-900">{metrics.totalLeads}/{metaLeadsMensal}</p>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                  <div className={`h-2.5 rounded-full transition-all duration-500 ${getBarColor(progressoLeads)}`} style={{ width: `${progressoLeads}%` }}></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{progressoLeads.toFixed(0)}% da meta</p>
+              </div>
+
+              <div className="p-4 rounded-apple border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-600">🔄 Conversão</p>
+                  <p className="text-sm font-bold text-gray-900">{metrics.taxaConversao.toFixed(1)}%/{metaConversaoMensal}%</p>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                  <div className={`h-2.5 rounded-full transition-all duration-500 ${getBarColor(progressoConversao)}`} style={{ width: `${progressoConversao}%` }}></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{progressoConversao.toFixed(0)}% da meta</p>
+              </div>
+
+              <div className="p-4 rounded-apple border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-600">💰 Ticket Médio</p>
+                  <p className="text-sm font-bold text-gray-900">R$ {metrics.ticketMedio.toLocaleString('pt-BR')}</p>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                  <div className={`h-2.5 rounded-full transition-all duration-500 ${getBarColor(progressoTicket)}`} style={{ width: `${progressoTicket}%` }}></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{progressoTicket.toFixed(0)}% da meta (R$ {metaTicketMedio.toLocaleString('pt-BR')})</p>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Recent Activity */}
       <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -1287,13 +1480,52 @@ const ClientesView: React.FC<ClientesViewProps> = ({ clientes, onNewCliente, onE
           onChange={(e) => setSearchTerm(e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-96"
         />
-        <button 
-          onClick={onNewCliente}
-          className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-apple transition-colors duration-200 shadow-apple-sm flex items-center"
-        >
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Novo Cliente
-        </button>
+        <div className="flex gap-2">
+          <label className="bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-apple transition-colors duration-200 shadow-apple-sm border border-gray-300 flex items-center cursor-pointer">
+            <input
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                const reader = new FileReader()
+                reader.onload = (ev) => {
+                  const text = ev.target?.result as string
+                  const lines = text.split('\n').filter(l => l.trim())
+                  if (lines.length < 2) { alert('CSV vazio ou sem dados'); return }
+                  alert(`✅ ${lines.length - 1} clientes importados com sucesso!\n\n(MVP: dados mockados - integração real em breve)`)
+                }
+                reader.readAsText(file)
+                e.target.value = ''
+              }}
+            />
+            📥 Importar CSV
+          </label>
+          <button
+            onClick={() => {
+              const csv = 'razaoSocial,cnpj,contatoNome,contatoTelefone,contatoEmail,endereco,valorEstimado,etapa,score\n' +
+                clientes.map(c => `"${c.razaoSocial}","${c.cnpj}","${c.contatoNome}","${c.contatoTelefone}","${c.contatoEmail}","${c.endereco || ''}","${c.valorEstimado || ''}","${c.etapa}","${c.score || 0}"`).join('\n')
+              const blob = new Blob([csv], { type: 'text/csv' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `clientes_${new Date().toISOString().split('T')[0]}.csv`
+              a.click()
+              URL.revokeObjectURL(url)
+            }}
+            className="bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-apple transition-colors duration-200 shadow-apple-sm border border-gray-300 flex items-center"
+          >
+            📤 Exportar CSV
+          </button>
+          <button 
+            onClick={onNewCliente}
+            className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-apple transition-colors duration-200 shadow-apple-sm flex items-center"
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Novo Cliente
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200">
@@ -1480,9 +1712,47 @@ const ProspeccaoView: React.FC<{
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Prospecção</h1>
-        <p className="mt-1 text-sm text-gray-600">Painel operacional para cadências, campanhas, templates e fila do dia.</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Prospecção</h1>
+          <p className="mt-1 text-sm text-gray-600">Painel operacional para cadências, campanhas, templates e fila do dia.</p>
+        </div>
+        <button
+          onClick={() => {
+            const sugestoes = clientes.map(cliente => {
+              let acao = ''
+              let prioridade = 'media'
+              if ((cliente.diasInativo || 0) > 30) {
+                acao = `Urgente: Reativar ${cliente.razaoSocial} - ${cliente.diasInativo} dias inativo`
+                prioridade = 'alta'
+              } else if (cliente.etapa === 'negociacao' && (cliente.score || 0) > 70) {
+                acao = `Enviar proposta para ${cliente.razaoSocial} - Alta chance de conversão`
+                prioridade = 'alta'
+              } else if (cliente.etapa === 'prospecção' && (cliente.score || 0) < 40) {
+                acao = `Qualificar melhor ${cliente.razaoSocial} - Score baixo`
+                prioridade = 'baixa'
+              } else if (cliente.etapa === 'amostra') {
+                acao = `Follow-up amostra com ${cliente.razaoSocial}`
+                prioridade = 'media'
+              } else {
+                acao = `Manter contato com ${cliente.razaoSocial}`
+                prioridade = 'media'
+              }
+              return { cliente: cliente.razaoSocial, acao, prioridade }
+            })
+            const alta = sugestoes.filter(s => s.prioridade === 'alta').length
+            const media = sugestoes.filter(s => s.prioridade === 'media').length
+            const baixa = sugestoes.filter(s => s.prioridade === 'baixa').length
+            const resumo = sugestoes.slice(0, 5).map(s =>
+              `• ${s.prioridade === 'alta' ? '🔴' : s.prioridade === 'media' ? '🟡' : '⚪'} ${s.acao}`
+            ).join('\n')
+            alert(`✨ IA analisou ${clientes.length} clientes!\n\nPrioridades:\n🔴 Alta: ${alta}\n🟡 Média: ${media}\n⚪ Baixa: ${baixa}\n\nTOP 5 Ações Sugeridas:\n${resumo}\n\nDica: Execute as ações de alta prioridade primeiro!`)
+          }}
+          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-apple hover:from-purple-700 hover:to-blue-700 shadow-apple-sm flex items-center text-sm font-semibold"
+        >
+          <SparklesIcon className="h-4 w-4 mr-2" />
+          IA Automatizar
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -1863,6 +2133,422 @@ const AutomacoesView: React.FC<{
             <div className="text-sm font-medium text-gray-900">Novos leads</div>
             <div className="text-xs text-gray-600 mt-1">Instagram + WhatsApp</div>
             <div className="text-xs text-gray-500 mt-2">Status: rascunho</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const TarefasView: React.FC<{
+  tarefas: Tarefa[]
+  clientes: Cliente[]
+  onUpdateTarefa: (t: Tarefa) => void
+  onAddTarefa: (t: Tarefa) => void
+}> = ({ tarefas, clientes, onUpdateTarefa, onAddTarefa }) => {
+  const [showModal, setShowModal] = React.useState(false)
+  const [filterStatus, setFilterStatus] = React.useState<'todas' | 'pendente' | 'concluida'>('pendente')
+  const [newTitulo, setNewTitulo] = React.useState('')
+  const [newDescricao, setNewDescricao] = React.useState('')
+  const [newData, setNewData] = React.useState(new Date().toISOString().split('T')[0])
+  const [newHora, setNewHora] = React.useState('')
+  const [newTipo, setNewTipo] = React.useState<Tarefa['tipo']>('ligacao')
+  const [newPrioridade, setNewPrioridade] = React.useState<Tarefa['prioridade']>('media')
+  const [newClienteId, setNewClienteId] = React.useState<number | ''>(clientes[0]?.id ?? '')
+
+  const hoje = new Date().toISOString().split('T')[0]
+
+  const filteredTarefas = tarefas.filter(t => {
+    return filterStatus === 'todas' || t.status === filterStatus
+  })
+
+  const tarefasPorData = filteredTarefas.reduce((acc, t) => {
+    if (!acc[t.data]) acc[t.data] = []
+    acc[t.data].push(t)
+    return acc
+  }, {} as Record<string, Tarefa[]>)
+
+  const datasOrdenadas = Object.keys(tarefasPorData).sort()
+
+  const handleAddTarefa = () => {
+    if (!newTitulo.trim()) return
+    onAddTarefa({
+      id: Date.now(),
+      titulo: newTitulo.trim(),
+      descricao: newDescricao.trim() || undefined,
+      data: newData,
+      hora: newHora.trim() || undefined,
+      tipo: newTipo,
+      status: 'pendente',
+      prioridade: newPrioridade,
+      clienteId: typeof newClienteId === 'number' ? newClienteId : undefined
+    })
+    setNewTitulo('')
+    setNewDescricao('')
+    setNewHora('')
+    setShowModal(false)
+  }
+
+  const toggleStatus = (tarefa: Tarefa) => {
+    onUpdateTarefa({ ...tarefa, status: tarefa.status === 'pendente' ? 'concluida' : 'pendente' })
+  }
+
+  const getTipoIcon = (tipo: Tarefa['tipo']) => {
+    switch (tipo) {
+      case 'ligacao': return '📞'
+      case 'reuniao': return '🤝'
+      case 'email': return '📧'
+      case 'whatsapp': return '💬'
+      case 'follow-up': return '🔄'
+      default: return '📋'
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Tarefas e Agenda</h1>
+          <p className="mt-1 text-sm text-gray-600">Organize suas atividades e nunca perca um follow-up</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              const amanha = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+              const sugeridas: Tarefa[] = [
+                { id: Date.now() + 1, clienteId: clientes.find(c => c.diasInativo && c.diasInativo > 7)?.id, titulo: 'Follow-up com leads inativos', descricao: 'Entrar em contato com clientes sem interação há mais de 7 dias', data: hoje, hora: '10:00', tipo: 'ligacao', status: 'pendente', prioridade: 'alta' },
+                { id: Date.now() + 2, clienteId: clientes.find(c => c.etapa === 'negociacao')?.id, titulo: 'Enviar proposta comercial', descricao: 'Preparar e enviar proposta para leads em negociação', data: hoje, hora: '14:00', tipo: 'email', status: 'pendente', prioridade: 'alta' },
+                { id: Date.now() + 3, titulo: 'Revisar pipeline de vendas', descricao: 'Analisar funil e identificar gargalos', data: amanha, hora: '09:00', tipo: 'outro', status: 'pendente', prioridade: 'media' },
+                { id: Date.now() + 4, clienteId: clientes.find(c => c.etapa === 'amostra')?.id, titulo: 'Agendar reunião de apresentação', descricao: 'Marcar reunião para apresentar produtos', data: amanha, hora: '15:00', tipo: 'reuniao', status: 'pendente', prioridade: 'media' },
+                { id: Date.now() + 5, titulo: 'Atualizar CRM e registros', descricao: 'Revisar e atualizar informações de clientes', data: amanha, tipo: 'outro', status: 'pendente', prioridade: 'baixa' }
+              ]
+              sugeridas.forEach(t => onAddTarefa(t))
+              alert(`✨ IA adicionou ${sugeridas.length} tarefas sugeridas!`)
+            }}
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-apple hover:from-purple-700 hover:to-blue-700 shadow-apple-sm flex items-center"
+          >
+            <SparklesIcon className="h-4 w-4 mr-2" />
+            IA Sugerir Tarefas
+          </button>
+          <button onClick={() => setShowModal(true)} className="px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 shadow-apple-sm flex items-center">
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Nova Tarefa
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)} className="px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500">
+          <option value="todas">Todas</option>
+          <option value="pendente">Pendentes</option>
+          <option value="concluida">Concluídas</option>
+        </select>
+      </div>
+
+      <div className="space-y-6">
+        {datasOrdenadas.length === 0 && (
+          <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-12 text-center">
+            <p className="text-gray-500">Nenhuma tarefa encontrada</p>
+          </div>
+        )}
+        {datasOrdenadas.map(data => {
+          const tarefasDia = tarefasPorData[data].sort((a, b) => {
+            if (a.hora && b.hora) return a.hora.localeCompare(b.hora)
+            if (a.hora) return -1
+            if (b.hora) return 1
+            return 0
+          })
+          const isHoje = data === hoje
+          return (
+            <div key={data} className="bg-white rounded-apple shadow-apple-sm border border-gray-200">
+              <div className={`px-6 py-4 border-b border-gray-200 ${isHoje ? 'bg-primary-50' : ''}`}>
+                <h3 className={`text-lg font-semibold ${isHoje ? 'text-primary-700' : 'text-gray-900'}`}>
+                  {isHoje ? '🔥 Hoje' : new Date(data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">{tarefasDia.length} tarefa(s)</p>
+              </div>
+              <div className="p-6 space-y-3">
+                {tarefasDia.map(tarefa => {
+                  const cliente = clientes.find(c => c.id === tarefa.clienteId)
+                  return (
+                    <div key={tarefa.id} className={`p-4 rounded-apple border-2 transition-all ${tarefa.status === 'concluida' ? 'bg-gray-50 border-gray-200 opacity-60' : tarefa.prioridade === 'alta' ? 'bg-red-50 border-red-200' : tarefa.prioridade === 'media' ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'}`}>
+                      <div className="flex items-start gap-4">
+                        <button onClick={() => toggleStatus(tarefa)} className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${tarefa.status === 'concluida' ? 'bg-green-500 border-green-500' : 'border-gray-300 hover:border-primary-500'}`}>
+                          {tarefa.status === 'concluida' && <span className="text-white text-xs">✓</span>}
+                        </button>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{getTipoIcon(tarefa.tipo)}</span>
+                                <h4 className={`font-semibold text-gray-900 ${tarefa.status === 'concluida' ? 'line-through' : ''}`}>{tarefa.titulo}</h4>
+                              </div>
+                              {tarefa.descricao && <p className="text-sm text-gray-600 mt-1">{tarefa.descricao}</p>}
+                              {cliente && <p className="text-xs text-gray-500 mt-2">👤 {cliente.razaoSocial}</p>}
+                            </div>
+                            <div className="text-right">
+                              {tarefa.hora && <p className="text-sm font-semibold text-gray-900">🕐 {tarefa.hora}</p>}
+                              <span className={`inline-block mt-1 px-2 py-1 text-xs font-semibold rounded-full ${tarefa.prioridade === 'alta' ? 'bg-red-100 text-red-700' : tarefa.prioridade === 'media' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>{tarefa.prioridade}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-apple shadow-apple-lg max-w-2xl w-full p-6">
+            <div className="flex items-start justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Nova Tarefa</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><XMarkIcon className="h-6 w-6" /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+                <input value={newTitulo} onChange={(e) => setNewTitulo(e.target.value)} placeholder="Ex: Ligar para SuperBH" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                <textarea value={newDescricao} onChange={(e) => setNewDescricao(e.target.value)} rows={2} placeholder="Detalhes..." className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data *</label>
+                  <input type="date" value={newData} onChange={(e) => setNewData(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hora</label>
+                  <input type="time" value={newHora} onChange={(e) => setNewHora(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                  <select value={newTipo} onChange={(e) => setNewTipo(e.target.value as Tarefa['tipo'])} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="ligacao">📞 Ligação</option>
+                    <option value="reuniao">🤝 Reunião</option>
+                    <option value="email">📧 Email</option>
+                    <option value="whatsapp">💬 WhatsApp</option>
+                    <option value="follow-up">🔄 Follow-up</option>
+                    <option value="outro">📋 Outro</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Prioridade</label>
+                  <select value={newPrioridade} onChange={(e) => setNewPrioridade(e.target.value as Tarefa['prioridade'])} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="baixa">Baixa</option>
+                    <option value="media">Média</option>
+                    <option value="alta">Alta</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cliente (opcional)</label>
+                <select value={newClienteId} onChange={(e) => setNewClienteId(e.target.value ? Number(e.target.value) : '')} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500">
+                  <option value="">Sem cliente</option>
+                  {clientes.map(c => <option key={c.id} value={c.id}>{c.razaoSocial}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 bg-white border border-gray-300 rounded-apple hover:bg-gray-50">Cancelar</button>
+              <button onClick={handleAddTarefa} disabled={!newTitulo.trim()} className="px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 disabled:bg-gray-400 shadow-apple-sm">Criar Tarefa</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const SocialSearchView: React.FC = () => {
+  const [searchQuery, setSearchQuery] = React.useState('')
+  const [searchType, setSearchType] = React.useState<'instagram' | 'linkedin' | 'google' | 'facebook' | 'painel'>('painel')
+  const [location, setLocation] = React.useState('Belo Horizonte - MG')
+  const [isSearching, setIsSearching] = React.useState(false)
+  const [results, setResults] = React.useState<Array<{ id: number; nome: string; descricao: string; endereco: string; telefone: string; site?: string; instagram?: string; linkedin?: string; facebook?: string; fonte?: string }>>([])
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return
+    setIsSearching(true)
+    await new Promise(r => setTimeout(r, 1500))
+    let mockResults: typeof results = []
+    if (searchType === 'painel' || searchType === 'google') {
+      mockResults = [
+        { id: 1, nome: 'SuperMercado Central BH', descricao: 'Supermercado de médio porte no centro de BH. 3 lojas.', endereco: 'Av. Afonso Pena, 1500 - Centro, BH - MG', telefone: '(31) 3333-4444', site: 'www.supercentralbh.com.br', instagram: '@supercentralbh', facebook: 'SuperCentralBH', fonte: searchType === 'painel' ? 'Google + Redes Sociais' : 'Google' },
+        { id: 2, nome: 'Mercado Família BH', descricao: 'Rede familiar com 5 unidades em BH.', endereco: 'Rua da Bahia, 890 - Centro, BH - MG', telefone: '(31) 3222-5555', instagram: '@mercadofamiliabh', facebook: 'MercadoFamiliaBH', fonte: searchType === 'painel' ? 'Google + Redes Sociais' : 'Google' },
+        { id: 3, nome: 'SuperCompras Pampulha', descricao: 'Supermercado premium na Pampulha.', endereco: 'Av. Portugal, 3200 - Pampulha, BH - MG', telefone: '(31) 3444-6666', site: 'www.supercompraspampulha.com.br', linkedin: 'SuperCompras Pampulha', fonte: searchType === 'painel' ? 'Google + Redes Sociais' : 'Google' }
+      ]
+    } else if (searchType === 'instagram') {
+      mockResults = [
+        { id: 1, nome: 'Empório Gourmet BH', descricao: 'Produtos premium. 12k seguidores.', endereco: 'Rua Pernambuco, 550 - Savassi, BH - MG', telefone: '(31) 99888-7777', instagram: '@emporiogourmetbh', fonte: 'Instagram' },
+        { id: 2, nome: 'Açougue Premium BH', descricao: 'Carnes nobres. 8k seguidores.', endereco: 'Av. Raja Gabaglia, 2000 - Luxemburgo, BH - MG', telefone: '(31) 99777-6666', instagram: '@acouguepremiumbh', fonte: 'Instagram' }
+      ]
+    } else if (searchType === 'facebook') {
+      mockResults = [
+        { id: 1, nome: 'Distribuidora Alimentos BH', descricao: 'Atacadista. 5.000 curtidas.', endereco: 'Av. Cristiano Machado, 1500 - Cidade Nova, BH - MG', telefone: '(31) 3555-4444', facebook: 'DistribuidoraAlimentosBH', fonte: 'Facebook' },
+        { id: 2, nome: 'Padaria Pão Quente BH', descricao: 'Rede de padarias. 3 unidades.', endereco: 'Rua Curitiba, 800 - Centro, BH - MG', telefone: '(31) 3222-3333', facebook: 'PadariasPaoQuente', fonte: 'Facebook' }
+      ]
+    } else if (searchType === 'linkedin') {
+      mockResults = [
+        { id: 1, nome: 'Rede Supermercados Mineiros S.A.', descricao: 'Rede com 15 lojas em MG. 500+ funcionários.', endereco: 'Av. do Contorno, 5000 - Funcionários, BH - MG', telefone: '(31) 3000-9000', linkedin: 'Rede Supermercados Mineiros', site: 'www.redesupermineiros.com.br', fonte: 'LinkedIn' }
+      ]
+    }
+    setResults(mockResults)
+    setIsSearching(false)
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-900">Busca por Redes Sociais</h1>
+        <p className="mt-1 text-sm text-gray-600">Encontre potenciais clientes através de buscas em redes sociais e Google (MVP - mock)</p>
+      </div>
+      <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">O que você procura?</label>
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Ex: supermercados, restaurantes, hotéis..." className="w-full px-4 py-3 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Região</label>
+              <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Cidade - UF" className="w-full px-4 py-3 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Fonte de busca</label>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {[
+                { id: 'painel', label: '🎯 Painel', desc: 'Busca completa' },
+                { id: 'google', label: '🔍 Google', desc: 'Busca geral' },
+                { id: 'instagram', label: '📸 Instagram', desc: 'Perfis comerciais' },
+                { id: 'facebook', label: '👥 Facebook', desc: 'Páginas e grupos' },
+                { id: 'linkedin', label: '💼 LinkedIn', desc: 'Empresas B2B' }
+              ].map((source) => (
+                <button key={source.id} onClick={() => setSearchType(source.id as any)} className={`p-3 rounded-apple border-2 transition-all ${searchType === source.id ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                  <div className="text-center">
+                    <div className="text-base font-semibold text-gray-900">{source.label}</div>
+                    <div className="text-xs text-gray-500 mt-1">{source.desc}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <button onClick={handleSearch} disabled={!searchQuery.trim() || isSearching} className="w-full px-6 py-3 bg-primary-600 text-white rounded-apple hover:bg-primary-700 disabled:bg-gray-400 shadow-apple-sm font-semibold">
+            {isSearching ? '🔍 Buscando...' : '🔍 Buscar Potenciais Clientes'}
+          </button>
+        </div>
+      </div>
+      {results.length > 0 && (
+        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Resultados ({results.length})</h3>
+          </div>
+          <div className="p-6 space-y-4">
+            {results.map((result) => (
+              <div key={result.id} className="p-4 border-2 border-gray-200 rounded-apple hover:border-primary-300 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className="text-lg font-semibold text-gray-900">{result.nome}</h4>
+                    <p className="text-sm text-gray-600 mt-1">{result.descricao}</p>
+                    <div className="mt-3 space-y-1">
+                      <p className="text-sm text-gray-700">📍 {result.endereco}</p>
+                      <p className="text-sm text-gray-700">📞 {result.telefone}</p>
+                      {result.site && <p className="text-sm text-primary-600">🌐 {result.site}</p>}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {result.fonte && <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full font-semibold">🎯 {result.fonte}</span>}
+                        {result.instagram && <span className="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded-full">📸 {result.instagram}</span>}
+                        {result.facebook && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">👥 {result.facebook}</span>}
+                        {result.linkedin && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">💼 {result.linkedin}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <button onClick={() => alert(`Importar: ${result.nome}\n${result.telefone}\n${result.endereco}`)} className="ml-4 px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 shadow-apple-sm whitespace-nowrap">➕ Adicionar Lead</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {!isSearching && results.length === 0 && (
+        <div className="bg-gray-50 rounded-apple border-2 border-dashed border-gray-300 p-12 text-center">
+          <div className="text-4xl mb-4">🔍</div>
+          <p className="text-gray-600">Digite sua busca e clique em "Buscar" para encontrar potenciais clientes</p>
+          <p className="text-sm text-gray-500 mt-2">MVP: Demonstração com dados mockados</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const IntegracoesView: React.FC = () => {
+  const [integracoes, setIntegracoes] = React.useState([
+    { id: 1, nome: 'WhatsApp Business', tipo: 'whatsapp', status: 'conectado', icon: '💬' },
+    { id: 2, nome: 'Gmail', tipo: 'email', status: 'conectado', icon: '📧' },
+    { id: 3, nome: 'LinkedIn', tipo: 'linkedin', status: 'desconectado', icon: '💼' },
+    { id: 4, nome: 'Instagram Business', tipo: 'instagram', status: 'desconectado', icon: '📸' },
+    { id: 5, nome: 'Facebook Pages', tipo: 'facebook', status: 'desconectado', icon: '👥' },
+    { id: 6, nome: 'Google Sheets', tipo: 'sheets', status: 'conectado', icon: '📊' },
+    { id: 7, nome: 'Zapier', tipo: 'zapier', status: 'desconectado', icon: '⚡' },
+    { id: 8, nome: 'Webhook Personalizado', tipo: 'webhook', status: 'desconectado', icon: '🔗' }
+  ])
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-900">Integrações</h1>
+        <p className="mt-1 text-sm text-gray-600">Conecte o CRM com suas ferramentas favoritas</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {integracoes.map((int) => (
+          <div key={int.id} className="bg-white rounded-apple shadow-apple-sm border-2 border-gray-200 p-6 hover:border-primary-300 transition-all">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl">{int.icon}</div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{int.nome}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`inline-block w-2 h-2 rounded-full ${int.status === 'conectado' ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                  <span className="text-xs text-gray-600">{int.status === 'conectado' ? 'Conectado' : 'Desconectado'}</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mt-3">
+              {int.tipo === 'whatsapp' && 'Envie mensagens automáticas via WhatsApp Business API'}
+              {int.tipo === 'email' && 'Sincronize emails e envie campanhas automatizadas'}
+              {int.tipo === 'linkedin' && 'Conecte com leads e envie mensagens pelo LinkedIn'}
+              {int.tipo === 'instagram' && 'Gerencie DMs e interações do Instagram Business'}
+              {int.tipo === 'facebook' && 'Integre com Facebook Pages e Messenger'}
+              {int.tipo === 'sheets' && 'Exporte e importe dados via Google Sheets'}
+              {int.tipo === 'zapier' && 'Conecte com 5000+ apps via Zapier'}
+              {int.tipo === 'webhook' && 'Configure webhooks personalizados'}
+            </p>
+            <button
+              onClick={() => {
+                const novoStatus = int.status === 'conectado' ? 'desconectado' : 'conectado'
+                setIntegracoes(prev => prev.map(i => i.id === int.id ? {...i, status: novoStatus} : i))
+                alert(`${int.nome} ${novoStatus === 'conectado' ? 'conectado' : 'desconectado'} com sucesso!`)
+              }}
+              className={`mt-4 w-full px-4 py-2 rounded-apple shadow-apple-sm font-semibold transition-colors ${int.status === 'conectado' ? 'bg-red-50 text-red-700 border-2 border-red-200 hover:bg-red-100' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
+            >
+              {int.status === 'conectado' ? 'Desconectar' : 'Conectar'}
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="bg-blue-50 rounded-apple border-2 border-blue-200 p-6">
+        <div className="flex items-start gap-4">
+          <div className="text-3xl">💡</div>
+          <div>
+            <h3 className="text-lg font-semibold text-blue-900">Dica: Automatize seu fluxo</h3>
+            <p className="text-sm text-blue-700 mt-2">Conecte WhatsApp + Gmail + Google Sheets para criar um fluxo completo.</p>
           </div>
         </div>
       </div>
