@@ -15,11 +15,13 @@ import {
   SunIcon,
   MoonIcon,
   AdjustmentsHorizontalIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  CubeIcon,
+  PhotoIcon
 } from '@heroicons/react/24/outline'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from 'recharts'
 
-type ViewType = 'dashboard' | 'funil' | 'clientes' | 'automacoes' | 'mapa' | 'prospeccao' | 'tarefas' | 'social' | 'integracoes' | 'equipe' | 'relatorios' | 'templates'
+type ViewType = 'dashboard' | 'funil' | 'clientes' | 'automacoes' | 'mapa' | 'prospeccao' | 'tarefas' | 'social' | 'integracoes' | 'equipe' | 'relatorios' | 'templates' | 'produtos'
 
 interface Cliente {
   id: number
@@ -102,6 +104,23 @@ interface Template {
   corpo: string
 }
 
+interface Produto {
+  id: number
+  nome: string
+  descricao: string
+  categoria: 'congelados' | 'laticinios' | 'bebidas' | 'limpeza' | 'outros'
+  preco: number
+  unidade: string
+  foto: string
+  sku?: string
+  estoque?: number
+  pesoKg?: number
+  margemLucro?: number
+  ativo: boolean
+  destaque: boolean
+  dataCadastro: string
+}
+
 interface DashboardMetrics {
   totalLeads: number
   leadsAtivos: number
@@ -118,6 +137,7 @@ interface DashboardViewProps {
   vendedores: Vendedor[]
   atividades: Atividade[]
   interacoes: Interacao[]
+  produtos: Produto[]
 }
 
 interface TemplateMsg {
@@ -230,6 +250,15 @@ function App() {
     { id: 8, nome: 'Follow-up WhatsApp', canal: 'whatsapp', etapa: 'negociacao', corpo: 'Olá {nome}! 🤝\nComo está a análise da nossa proposta para {empresa}?\nTemos condições especiais este mês. Posso ajudar em algo? 💬' },
   ])
 
+  const [produtos, setProdutos] = useState<Produto[]>([
+    { id: 1, nome: 'Filé de Tilápia Congelado', descricao: 'Filé de tilápia sem pele, congelado individualmente. Embalagem de 1kg.', categoria: 'congelados', preco: 32.90, unidade: 'kg', foto: '', sku: 'CONG-001', estoque: 500, pesoKg: 1, margemLucro: 35, ativo: true, destaque: true, dataCadastro: '2024-01-01' },
+    { id: 2, nome: 'Queijo Mussarela Fatiado', descricao: 'Queijo mussarela fatiado, embalagem de 3kg para food service.', categoria: 'laticinios', preco: 45.50, unidade: 'kg', foto: '', sku: 'LAT-001', estoque: 300, pesoKg: 3, margemLucro: 28, ativo: true, destaque: false, dataCadastro: '2024-01-01' },
+    { id: 3, nome: 'Refrigerante Cola 2L', descricao: 'Refrigerante sabor cola, garrafa PET 2 litros. Fardo com 6 unidades.', categoria: 'bebidas', preco: 8.90, unidade: 'un', foto: '', sku: 'BEB-001', estoque: 1200, pesoKg: 2, margemLucro: 22, ativo: true, destaque: false, dataCadastro: '2024-01-05' },
+    { id: 4, nome: 'Detergente Neutro 500ml', descricao: 'Detergente líquido neutro, embalagem de 500ml. Caixa com 24 unidades.', categoria: 'limpeza', preco: 2.50, unidade: 'un', foto: '', sku: 'LIMP-001', estoque: 2000, pesoKg: 0.5, margemLucro: 40, ativo: true, destaque: false, dataCadastro: '2024-01-10' },
+    { id: 5, nome: 'Manteiga com Sal 200g', descricao: 'Manteiga de primeira qualidade com sal, tablete de 200g.', categoria: 'laticinios', preco: 12.80, unidade: 'un', foto: '', sku: 'LAT-002', estoque: 800, pesoKg: 0.2, margemLucro: 30, ativo: true, destaque: true, dataCadastro: '2024-01-12' },
+    { id: 6, nome: 'Frango Inteiro Congelado', descricao: 'Frango inteiro congelado, embalagem individual. Peso médio 2,5kg.', categoria: 'congelados', preco: 18.90, unidade: 'kg', foto: '', sku: 'CONG-002', estoque: 400, pesoKg: 2.5, margemLucro: 25, ativo: true, destaque: false, dataCadastro: '2024-01-15' },
+  ])
+
   const [activeView, setActiveView] = useState<ViewType>('dashboard')
   const [showModal, setShowModal] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
@@ -251,7 +280,7 @@ function App() {
       ultimaInteracao: '2024-01-15',
       diasInativo: 5,
       valorEstimado: 150000,
-      produtosInteresse: ['congelados', 'laticínios']
+      produtosInteresse: ['Filé de Tilápia Congelado', 'Queijo Mussarela Fatiado']
     },
     {
       id: 2,
@@ -267,7 +296,7 @@ function App() {
       ultimaInteracao: '2024-01-18',
       diasInativo: 2,
       valorEstimado: 85000,
-      produtosInteresse: ['bebidas', 'limpeza']
+      produtosInteresse: ['Refrigerante Cola 2L', 'Detergente Neutro 500ml']
     }
   ])
   const [interacoes, setInteracoes] = useState<Interacao[]>([
@@ -777,7 +806,7 @@ function App() {
     const dashboardMetrics = calculateDashboardMetrics()
     switch (activeView) {
       case 'dashboard':
-        return <DashboardView clientes={clientes} metrics={dashboardMetrics} vendedores={vendedores} atividades={atividades} interacoes={interacoes} />
+        return <DashboardView clientes={clientes} metrics={dashboardMetrics} vendedores={vendedores} atividades={atividades} interacoes={interacoes} produtos={produtos} />
       case 'funil':
         return <FunilView 
           clientes={clientes} 
@@ -821,11 +850,13 @@ function App() {
       case 'equipe':
         return <VendedoresView vendedores={vendedores} clientes={clientes} onAddVendedor={(v) => setVendedores(prev => [...prev, v])} onUpdateVendedor={(v) => setVendedores(prev => prev.map(x => x.id === v.id ? v : x))} />
       case 'relatorios':
-        return <RelatoriosView clientes={clientes} vendedores={vendedores} interacoes={interacoes} />
+        return <RelatoriosView clientes={clientes} vendedores={vendedores} interacoes={interacoes} produtos={produtos} />
       case 'templates':
         return <TemplatesView templates={templates} onAdd={(t) => setTemplates(prev => [...prev, t])} onDelete={(id) => setTemplates(prev => prev.filter(t => t.id !== id))} />
+      case 'produtos':
+        return <ProdutosView produtos={produtos} onAdd={(p) => setProdutos(prev => [...prev, p])} onUpdate={(p) => setProdutos(prev => prev.map(x => x.id === p.id ? p : x))} onDelete={(id) => setProdutos(prev => prev.filter(p => p.id !== id))} isGerente={loggedUser?.cargo === 'gerente'} />
       default:
-        return <DashboardView clientes={clientes} metrics={dashboardMetrics} vendedores={vendedores} atividades={atividades} interacoes={interacoes} />
+        return <DashboardView clientes={clientes} metrics={dashboardMetrics} vendedores={vendedores} atividades={atividades} interacoes={interacoes} produtos={produtos} />
     }
   }
 
@@ -1066,6 +1097,20 @@ function App() {
           </button>
 
           <button
+            onClick={() => setActiveView('produtos')}
+            className={`
+              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
+              ${activeView === 'produtos'
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }
+            `}
+          >
+            <CubeIcon className="mr-3 h-5 w-5" />
+            Produtos
+          </button>
+
+          <button
             onClick={() => setActiveView('relatorios')}
             className={`
               w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
@@ -1146,6 +1191,7 @@ function App() {
             {activeView === 'equipe' && 'Equipe de Vendas'}
             {activeView === 'relatorios' && 'Relatórios e Gráficos'}
             {activeView === 'templates' && 'Templates de Mensagens'}
+            {activeView === 'produtos' && 'Catálogo de Produtos'}
           </h2>
           
           <div className="flex items-center space-x-3">
@@ -1350,14 +1396,40 @@ function App() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Produtos de Interesse
                     </label>
-                    <input
-                      type="text"
-                      name="produtosInteresse"
-                      value={formData.produtosInteresse}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="congelados, laticínios, bebidas, limpeza"
-                    />
+                    <div className="border border-gray-300 rounded-apple p-3 max-h-40 overflow-y-auto space-y-1">
+                      {produtos.filter(p => p.ativo).map(p => {
+                        const selected = formData.produtosInteresse.split(',').map(s => s.trim()).filter(Boolean)
+                        const isChecked = selected.includes(p.nome)
+                        return (
+                          <label key={p.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                const updated = isChecked
+                                  ? selected.filter(s => s !== p.nome)
+                                  : [...selected, p.nome]
+                                setFormData(prev => ({ ...prev, produtosInteresse: updated.join(', ') }))
+                              }}
+                              className="w-4 h-4 text-primary-600 rounded"
+                            />
+                            <span className="text-sm text-gray-700">{p.nome}</span>
+                            <span className="text-xs text-gray-400 ml-auto">R$ {p.preco.toFixed(2).replace('.', ',')}/{p.unidade}</span>
+                          </label>
+                        )
+                      })}
+                      {produtos.filter(p => p.ativo).length === 0 && <p className="text-xs text-gray-400">Nenhum produto cadastrado</p>}
+                    </div>
+                    {formData.produtosInteresse && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {formData.produtosInteresse.split(',').map(s => s.trim()).filter(Boolean).map(name => (
+                          <span key={name} className="px-2 py-0.5 text-xs bg-primary-50 text-primary-700 rounded-full border border-primary-200 flex items-center gap-1">
+                            {name}
+                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, produtosInteresse: prev.produtosInteresse.split(',').map(s => s.trim()).filter(s => s && s !== name).join(', ') }))} className="text-primary-400 hover:text-primary-700">×</button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1543,7 +1615,7 @@ function App() {
 }
 
 // Dashboard View
-const DashboardView: React.FC<DashboardViewProps> = ({ clientes, metrics, vendedores, atividades, interacoes }) => {
+const DashboardView: React.FC<DashboardViewProps> = ({ clientes, metrics, vendedores, atividades, interacoes, produtos }) => {
   const stages = ['prospecção', 'amostra', 'homologado', 'negociacao', 'pos_venda', 'perdido']
   const stageLabels: Record<string, string> = { 'prospecção': 'Prospecção', 'amostra': 'Amostra', 'homologado': 'Homologado', 'negociacao': 'Negociação', 'pos_venda': 'Pós-Venda', 'perdido': 'Perdido' }
   const pipelineData = stages.map(s => ({
@@ -1724,6 +1796,39 @@ const DashboardView: React.FC<DashboardViewProps> = ({ clientes, metrics, vended
         </div>
       </div>
 
+      {/* Produtos Ranking + Activity Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">📦 Produtos Mais Procurados</h3>
+          <div className="space-y-3">
+            {(() => {
+              const prodCount: Record<string, number> = {}
+              clientes.forEach(c => (c.produtosInteresse || []).forEach(p => { prodCount[p] = (prodCount[p] || 0) + 1 }))
+              const ranked = Object.entries(prodCount).sort((a, b) => b[1] - a[1]).slice(0, 5)
+              const maxCount = ranked.length > 0 ? ranked[0][1] : 1
+              if (ranked.length === 0) return <p className="text-sm text-gray-500">Nenhum produto vinculado a leads ainda</p>
+              return ranked.map(([name, count], i) => {
+                const prod = produtos.find(p => p.nome === name)
+                return (
+                  <div key={name} className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-gray-400 w-5">{i + 1}.</span>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm font-medium text-gray-900">{name}</p>
+                        <span className="text-xs text-gray-500">{count} leads</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-2">
+                        <div className="h-2 rounded-full bg-primary-500 transition-all" style={{ width: `${(count / maxCount) * 100}%` }}></div>
+                      </div>
+                      {prod && <p className="text-xs text-gray-400 mt-0.5">R$ {prod.preco.toFixed(2).replace('.', ',')} / {prod.unidade}</p>}
+                    </div>
+                  </div>
+                )
+              })
+            })()}
+          </div>
+        </div>
+
       {/* Activity Feed */}
       <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -1747,6 +1852,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ clientes, metrics, vended
           ))}
           {atividades.length === 0 && <div className="p-6 text-center text-gray-500 text-sm">Nenhuma atividade registrada</div>}
         </div>
+      </div>
       </div>
     </div>
   )
@@ -1791,6 +1897,15 @@ const FunilView: React.FC<FunilViewProps> = ({ clientes, onDragStart, onDragOver
                   >
                     <h4 className="font-medium text-sm text-gray-900">{cliente.razaoSocial}</h4>
                     <p className="text-xs text-gray-500">{cliente.contatoNome}</p>
+                    {cliente.valorEstimado && <p className="text-xs font-semibold text-primary-600 mt-1">R$ {cliente.valorEstimado.toLocaleString('pt-BR')}</p>}
+                    {cliente.produtosInteresse && cliente.produtosInteresse.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {cliente.produtosInteresse.slice(0, 2).map(p => (
+                          <span key={p} className="px-1.5 py-0.5 text-[10px] bg-primary-50 text-primary-700 rounded-full border border-primary-100 truncate max-w-[100px]">{p}</span>
+                        ))}
+                        {cliente.produtosInteresse.length > 2 && <span className="text-[10px] text-gray-400">+{cliente.produtosInteresse.length - 2}</span>}
+                      </div>
+                    )}
                   </div>
                 ))}
               {clientes.filter(c => c.etapa === stage.key).length === 0 && (
@@ -3563,7 +3678,7 @@ const MapaView: React.FC<{ clientes: Cliente[] }> = ({ clientes }) => {
 }
 
 // Relatórios View
-const RelatoriosView: React.FC<{ clientes: Cliente[], vendedores: Vendedor[], interacoes: Interacao[] }> = ({ clientes, vendedores, interacoes }) => {
+const RelatoriosView: React.FC<{ clientes: Cliente[], vendedores: Vendedor[], interacoes: Interacao[], produtos?: Produto[] }> = ({ clientes, vendedores, interacoes, produtos = [] }) => {
   const stages = ['prospecção', 'amostra', 'homologado', 'negociacao', 'pos_venda', 'perdido']
   const stageLabels: Record<string, string> = { 'prospecção': 'Prospecção', 'amostra': 'Amostra', 'homologado': 'Homologado', 'negociacao': 'Negociação', 'pos_venda': 'Pós-Venda', 'perdido': 'Perdido' }
   const COLORS = ['#3B82F6', '#EAB308', '#22C55E', '#A855F7', '#EC4899', '#EF4444']
@@ -3655,6 +3770,24 @@ const RelatoriosView: React.FC<{ clientes: Cliente[], vendedores: Vendedor[], in
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* Produtos por Pipeline */}
+      <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">📦 Produtos por Volume de Pipeline</h3>
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={(() => {
+            const prodPipeline: Record<string, number> = {}
+            clientes.forEach(c => (c.produtosInteresse || []).forEach(p => { prodPipeline[p] = (prodPipeline[p] || 0) + (c.valorEstimado || 0) }))
+            return Object.entries(prodPipeline).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, valor]) => ({ name: name.length > 18 ? name.slice(0, 18) + '…' : name, valor }))
+          })()} layout="vertical">
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+            <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={140} />
+            <Tooltip formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Pipeline']} />
+            <Bar dataKey="valor" fill="#F59E0B" name="Pipeline" radius={[0, 6, 6, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
@@ -3830,6 +3963,306 @@ const TemplatesView: React.FC<{ templates: Template[], onAdd: (t: Template) => v
             <div className="flex justify-end gap-3 mt-6">
               <button onClick={() => setShowModal(false)} className="px-4 py-2 bg-white border border-gray-300 rounded-apple hover:bg-gray-50">Cancelar</button>
               <button onClick={handleAdd} disabled={!newNome.trim() || !newCorpo.trim()} className="px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 disabled:bg-gray-400 shadow-apple-sm">Criar Template</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Produtos View
+const ProdutosView: React.FC<{
+  produtos: Produto[]
+  onAdd: (p: Produto) => void
+  onUpdate: (p: Produto) => void
+  onDelete: (id: number) => void
+  isGerente: boolean
+}> = ({ produtos, onAdd, onUpdate, onDelete, isGerente }) => {
+  const [search, setSearch] = React.useState('')
+  const [filterCategoria, setFilterCategoria] = React.useState('')
+  const [filterAtivo, setFilterAtivo] = React.useState<string>('')
+  const [showModal, setShowModal] = React.useState(false)
+  const [editing, setEditing] = React.useState<Produto | null>(null)
+  const [previewId, setPreviewId] = React.useState<number | null>(null)
+
+  const [fNome, setFNome] = React.useState('')
+  const [fDescricao, setFDescricao] = React.useState('')
+  const [fCategoria, setFCategoria] = React.useState<Produto['categoria']>('congelados')
+  const [fPreco, setFPreco] = React.useState('')
+  const [fUnidade, setFUnidade] = React.useState('un')
+  const [fFoto, setFFoto] = React.useState('')
+  const [fSku, setFSku] = React.useState('')
+  const [fEstoque, setFEstoque] = React.useState('')
+  const [fPesoKg, setFPesoKg] = React.useState('')
+  const [fMargemLucro, setFMargemLucro] = React.useState('')
+  const [fAtivo, setFAtivo] = React.useState(true)
+  const [fDestaque, setFDestaque] = React.useState(false)
+
+  const filtered = produtos.filter(p => {
+    const matchSearch = p.nome.toLowerCase().includes(search.toLowerCase()) || (p.sku || '').toLowerCase().includes(search.toLowerCase())
+    const matchCat = !filterCategoria || p.categoria === filterCategoria
+    const matchAtivo = filterAtivo === '' || (filterAtivo === 'ativo' ? p.ativo : !p.ativo)
+    return matchSearch && matchCat && matchAtivo
+  })
+
+  const openNew = () => {
+    setEditing(null)
+    setFNome(''); setFDescricao(''); setFCategoria('congelados'); setFPreco(''); setFUnidade('un')
+    setFFoto(''); setFSku(''); setFEstoque(''); setFPesoKg(''); setFMargemLucro('')
+    setFAtivo(true); setFDestaque(false); setShowModal(true)
+  }
+
+  const openEdit = (p: Produto) => {
+    setEditing(p)
+    setFNome(p.nome); setFDescricao(p.descricao); setFCategoria(p.categoria); setFPreco(String(p.preco)); setFUnidade(p.unidade)
+    setFFoto(p.foto); setFSku(p.sku || ''); setFEstoque(p.estoque !== undefined ? String(p.estoque) : ''); setFPesoKg(p.pesoKg !== undefined ? String(p.pesoKg) : ''); setFMargemLucro(p.margemLucro !== undefined ? String(p.margemLucro) : '')
+    setFAtivo(p.ativo); setFDestaque(p.destaque); setShowModal(true)
+  }
+
+  const handleFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) { alert('Imagem deve ter no máximo 2MB'); return }
+    const reader = new FileReader()
+    reader.onload = (ev) => setFFoto(ev.target?.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  const handleSave = () => {
+    if (!fNome.trim() || !fDescricao.trim() || !fPreco) return
+    const prod: Produto = {
+      id: editing ? editing.id : Date.now(),
+      nome: fNome.trim(),
+      descricao: fDescricao.trim(),
+      categoria: fCategoria,
+      preco: parseFloat(fPreco),
+      unidade: fUnidade,
+      foto: fFoto,
+      sku: fSku.trim() || undefined,
+      estoque: fEstoque ? parseInt(fEstoque) : undefined,
+      pesoKg: fPesoKg ? parseFloat(fPesoKg) : undefined,
+      margemLucro: fMargemLucro ? parseFloat(fMargemLucro) : undefined,
+      ativo: fAtivo,
+      destaque: fDestaque,
+      dataCadastro: editing ? editing.dataCadastro : new Date().toISOString().split('T')[0]
+    }
+    if (editing) { onUpdate(prod) } else { onAdd(prod) }
+    setShowModal(false)
+  }
+
+  const catLabel: Record<string, string> = { congelados: 'Congelados', laticinios: 'Laticínios', bebidas: 'Bebidas', limpeza: 'Limpeza', outros: 'Outros' }
+  const catColor: Record<string, string> = { congelados: 'bg-cyan-100 text-cyan-800', laticinios: 'bg-yellow-100 text-yellow-800', bebidas: 'bg-purple-100 text-purple-800', limpeza: 'bg-green-100 text-green-800', outros: 'bg-gray-100 text-gray-800' }
+
+  const previewProd = produtos.find(p => p.id === previewId)
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Catálogo de Produtos</h1>
+          <p className="mt-1 text-sm text-gray-600">{produtos.filter(p => p.ativo).length} produtos ativos — {produtos.length} total</p>
+        </div>
+        {isGerente && (
+          <button onClick={openNew} className="px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 shadow-apple-sm flex items-center">
+            <PlusIcon className="h-4 w-4 mr-2" /> Novo Produto
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <input type="text" placeholder="Buscar por nome ou SKU..." value={search} onChange={(e) => setSearch(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 w-72" />
+        <select value={filterCategoria} onChange={(e) => setFilterCategoria(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-apple text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+          <option value="">Todas categorias</option>
+          <option value="congelados">Congelados</option>
+          <option value="laticinios">Laticínios</option>
+          <option value="bebidas">Bebidas</option>
+          <option value="limpeza">Limpeza</option>
+          <option value="outros">Outros</option>
+        </select>
+        <select value={filterAtivo} onChange={(e) => setFilterAtivo(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-apple text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+          <option value="">Todos</option>
+          <option value="ativo">Ativos</option>
+          <option value="inativo">Inativos</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {filtered.map(p => (
+          <div key={p.id} className={`bg-white rounded-apple shadow-apple-sm border border-gray-200 overflow-hidden hover:shadow-apple transition-shadow ${!p.ativo ? 'opacity-60' : ''}`}>
+            <div className="h-40 bg-gray-100 flex items-center justify-center relative">
+              {p.foto ? (
+                <img src={p.foto} alt={p.nome} className="w-full h-full object-cover" />
+              ) : (
+                <PhotoIcon className="h-16 w-16 text-gray-300" />
+              )}
+              {p.destaque && <span className="absolute top-2 left-2 px-2 py-0.5 text-xs font-bold bg-yellow-400 text-yellow-900 rounded-full">Destaque</span>}
+              {!p.ativo && <span className="absolute top-2 right-2 px-2 py-0.5 text-xs font-bold bg-red-100 text-red-700 rounded-full">Inativo</span>}
+            </div>
+            <div className="p-4">
+              <div className="flex items-start justify-between mb-1">
+                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${catColor[p.categoria]}`}>{catLabel[p.categoria]}</span>
+                {p.sku && <span className="text-xs text-gray-400 font-mono">{p.sku}</span>}
+              </div>
+              <h3 className="font-semibold text-gray-900 mt-2 text-sm leading-tight">{p.nome}</h3>
+              <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.descricao}</p>
+              <div className="flex items-end justify-between mt-3">
+                <div>
+                  <p className="text-lg font-bold text-primary-600">R$ {p.preco.toFixed(2).replace('.', ',')}</p>
+                  <p className="text-xs text-gray-400">/{p.unidade}</p>
+                </div>
+                {p.estoque !== undefined && (
+                  <p className={`text-xs font-medium ${p.estoque > 100 ? 'text-green-600' : p.estoque > 0 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {p.estoque > 0 ? `${p.estoque} em estoque` : 'Sem estoque'}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                <button onClick={() => setPreviewId(p.id)} className="text-xs text-primary-600 hover:text-primary-800 font-medium flex-1">Ver detalhes</button>
+                {isGerente && (
+                  <>
+                    <button onClick={() => openEdit(p)} className="text-xs text-gray-600 hover:text-gray-800 font-medium">Editar</button>
+                    <button onClick={() => onUpdate({ ...p, ativo: !p.ativo })} className="text-xs text-gray-600 hover:text-gray-800 font-medium">{p.ativo ? 'Desativar' : 'Ativar'}</button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filtered.length === 0 && <div className="text-center py-12 text-gray-500">Nenhum produto encontrado</div>}
+
+      {/* Detail Modal */}
+      {previewProd && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-apple shadow-apple-lg max-w-lg w-full max-h-[85vh] overflow-y-auto">
+            {previewProd.foto ? (
+              <img src={previewProd.foto} alt={previewProd.nome} className="w-full h-56 object-cover rounded-t-apple" />
+            ) : (
+              <div className="w-full h-56 bg-gray-100 flex items-center justify-center rounded-t-apple"><PhotoIcon className="h-20 w-20 text-gray-300" /></div>
+            )}
+            <div className="p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex gap-2 mb-2">
+                    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${catColor[previewProd.categoria]}`}>{catLabel[previewProd.categoria]}</span>
+                    {previewProd.destaque && <span className="px-2 py-0.5 text-xs font-bold bg-yellow-400 text-yellow-900 rounded-full">Destaque</span>}
+                    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${previewProd.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{previewProd.ativo ? 'Ativo' : 'Inativo'}</span>
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">{previewProd.nome}</h2>
+                </div>
+                <button onClick={() => setPreviewId(null)} className="text-gray-400 hover:text-gray-600"><XMarkIcon className="h-6 w-6" /></button>
+              </div>
+              <p className="text-sm text-gray-600 mt-3">{previewProd.descricao}</p>
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="p-3 bg-gray-50 rounded-apple"><p className="text-xs text-gray-500">Preço</p><p className="text-lg font-bold text-primary-600">R$ {previewProd.preco.toFixed(2).replace('.', ',')}/{previewProd.unidade}</p></div>
+                {previewProd.sku && <div className="p-3 bg-gray-50 rounded-apple"><p className="text-xs text-gray-500">SKU</p><p className="text-sm font-mono font-semibold text-gray-900">{previewProd.sku}</p></div>}
+                {previewProd.estoque !== undefined && <div className="p-3 bg-gray-50 rounded-apple"><p className="text-xs text-gray-500">Estoque</p><p className="text-sm font-semibold text-gray-900">{previewProd.estoque} {previewProd.unidade}</p></div>}
+                {previewProd.pesoKg !== undefined && <div className="p-3 bg-gray-50 rounded-apple"><p className="text-xs text-gray-500">Peso</p><p className="text-sm font-semibold text-gray-900">{previewProd.pesoKg} kg</p></div>}
+                {previewProd.margemLucro !== undefined && <div className="p-3 bg-gray-50 rounded-apple"><p className="text-xs text-gray-500">Margem</p><p className="text-sm font-semibold text-gray-900">{previewProd.margemLucro}%</p></div>}
+                <div className="p-3 bg-gray-50 rounded-apple"><p className="text-xs text-gray-500">Cadastrado em</p><p className="text-sm font-semibold text-gray-900">{new Date(previewProd.dataCadastro).toLocaleDateString('pt-BR')}</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-apple shadow-apple-lg max-w-xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex items-start justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">{editing ? 'Editar Produto' : 'Novo Produto'}</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><XMarkIcon className="h-6 w-6" /></button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Foto Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Foto do Produto</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-24 bg-gray-100 rounded-apple border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {fFoto ? <img src={fFoto} alt="Preview" className="w-full h-full object-cover" /> : <PhotoIcon className="h-10 w-10 text-gray-300" />}
+                  </div>
+                  <div>
+                    <label className="px-4 py-2 bg-white border border-gray-300 rounded-apple text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer inline-block">
+                      <input type="file" accept="image/*" className="hidden" onChange={handleFoto} />
+                      Escolher imagem
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">JPG, PNG ou WebP. Máx 2MB.</p>
+                    {fFoto && <button onClick={() => setFFoto('')} className="text-xs text-red-500 hover:text-red-700 mt-1">Remover foto</button>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+                  <input value={fNome} onChange={(e) => setFNome(e.target.value)} placeholder="Ex: Filé de Tilápia Congelado" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Descrição *</label>
+                  <textarea value={fDescricao} onChange={(e) => setFDescricao(e.target.value)} rows={3} placeholder="Descrição detalhada do produto..." className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Categoria *</label>
+                  <select value={fCategoria} onChange={(e) => setFCategoria(e.target.value as Produto['categoria'])} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="congelados">Congelados</option>
+                    <option value="laticinios">Laticínios</option>
+                    <option value="bebidas">Bebidas</option>
+                    <option value="limpeza">Limpeza</option>
+                    <option value="outros">Outros</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                  <input value={fSku} onChange={(e) => setFSku(e.target.value)} placeholder="CONG-001" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Preço (R$) *</label>
+                  <input type="number" step="0.01" value={fPreco} onChange={(e) => setFPreco(e.target.value)} placeholder="0,00" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Unidade *</label>
+                  <select value={fUnidade} onChange={(e) => setFUnidade(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="un">Unidade (un)</option>
+                    <option value="kg">Quilograma (kg)</option>
+                    <option value="cx">Caixa (cx)</option>
+                    <option value="lt">Litro (lt)</option>
+                    <option value="pct">Pacote (pct)</option>
+                    <option value="fd">Fardo (fd)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Estoque</label>
+                  <input type="number" value={fEstoque} onChange={(e) => setFEstoque(e.target.value)} placeholder="0" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Peso (kg)</label>
+                  <input type="number" step="0.1" value={fPesoKg} onChange={(e) => setFPesoKg(e.target.value)} placeholder="0.0" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Margem Lucro (%)</label>
+                  <input type="number" step="0.1" value={fMargemLucro} onChange={(e) => setFMargemLucro(e.target.value)} placeholder="0" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+              </div>
+
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={fAtivo} onChange={(e) => setFAtivo(e.target.checked)} className="w-4 h-4 text-primary-600 rounded" />
+                  <span className="text-sm text-gray-700">Produto ativo</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={fDestaque} onChange={(e) => setFDestaque(e.target.checked)} className="w-4 h-4 text-yellow-500 rounded" />
+                  <span className="text-sm text-gray-700">Destaque / Promoção</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 bg-white border border-gray-300 rounded-apple hover:bg-gray-50">Cancelar</button>
+              <button onClick={handleSave} disabled={!fNome.trim() || !fDescricao.trim() || !fPreco} className="px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 disabled:bg-gray-400 shadow-apple-sm">{editing ? 'Salvar' : 'Criar Produto'}</button>
             </div>
           </div>
         </div>
