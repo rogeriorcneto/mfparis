@@ -108,7 +108,7 @@ interface Produto {
   id: number
   nome: string
   descricao: string
-  categoria: 'congelados' | 'laticinios' | 'bebidas' | 'limpeza' | 'outros'
+  categoria: 'sacaria' | 'okey_lac' | 'varejo_lacteo' | 'cafe' | 'outros'
   preco: number
   unidade: string
   foto: string
@@ -251,12 +251,26 @@ function App() {
   ])
 
   const [produtos, setProdutos] = useState<Produto[]>([
-    { id: 1, nome: 'Filé de Tilápia Congelado', descricao: 'Filé de tilápia sem pele, congelado individualmente. Embalagem de 1kg.', categoria: 'congelados', preco: 32.90, unidade: 'kg', foto: '', sku: 'CONG-001', estoque: 500, pesoKg: 1, margemLucro: 35, ativo: true, destaque: true, dataCadastro: '2024-01-01' },
-    { id: 2, nome: 'Queijo Mussarela Fatiado', descricao: 'Queijo mussarela fatiado, embalagem de 3kg para food service.', categoria: 'laticinios', preco: 45.50, unidade: 'kg', foto: '', sku: 'LAT-001', estoque: 300, pesoKg: 3, margemLucro: 28, ativo: true, destaque: false, dataCadastro: '2024-01-01' },
-    { id: 3, nome: 'Refrigerante Cola 2L', descricao: 'Refrigerante sabor cola, garrafa PET 2 litros. Fardo com 6 unidades.', categoria: 'bebidas', preco: 8.90, unidade: 'un', foto: '', sku: 'BEB-001', estoque: 1200, pesoKg: 2, margemLucro: 22, ativo: true, destaque: false, dataCadastro: '2024-01-05' },
-    { id: 4, nome: 'Detergente Neutro 500ml', descricao: 'Detergente líquido neutro, embalagem de 500ml. Caixa com 24 unidades.', categoria: 'limpeza', preco: 2.50, unidade: 'un', foto: '', sku: 'LIMP-001', estoque: 2000, pesoKg: 0.5, margemLucro: 40, ativo: true, destaque: false, dataCadastro: '2024-01-10' },
-    { id: 5, nome: 'Manteiga com Sal 200g', descricao: 'Manteiga de primeira qualidade com sal, tablete de 200g.', categoria: 'laticinios', preco: 12.80, unidade: 'un', foto: '', sku: 'LAT-002', estoque: 800, pesoKg: 0.2, margemLucro: 30, ativo: true, destaque: true, dataCadastro: '2024-01-12' },
-    { id: 6, nome: 'Frango Inteiro Congelado', descricao: 'Frango inteiro congelado, embalagem individual. Peso médio 2,5kg.', categoria: 'congelados', preco: 18.90, unidade: 'kg', foto: '', sku: 'CONG-002', estoque: 400, pesoKg: 2.5, margemLucro: 25, ativo: true, destaque: false, dataCadastro: '2024-01-15' },
+    // SACARIA 25kg — Linha Horizonte
+    { id: 1, nome: 'Leite em Pó Integral 25kg', descricao: 'Rico em nutrientes essenciais, ideal para consumo direto e aplicações industriais. Produto possui SIF.', categoria: 'sacaria', preco: 650.00, unidade: 'sc', foto: '', sku: 'SAC-001', estoque: 200, pesoKg: 25, margemLucro: 18, ativo: true, destaque: true, dataCadastro: '2024-01-01' },
+    { id: 2, nome: 'Leite em Pó Desnatado 25kg', descricao: 'Alternativa saudável com menor teor de gordura, preservando o sabor e os benefícios do leite.', categoria: 'sacaria', preco: 620.00, unidade: 'sc', foto: '', sku: 'SAC-002', estoque: 180, pesoKg: 25, margemLucro: 17, ativo: true, destaque: false, dataCadastro: '2024-01-01' },
+    { id: 3, nome: 'Soro de Leite 25kg', descricao: 'Ingrediente valioso utilizado em indústrias alimentícias, conhecido por suas propriedades nutricionais e funcionais.', categoria: 'sacaria', preco: 280.00, unidade: 'sc', foto: '', sku: 'SAC-003', estoque: 300, pesoKg: 25, margemLucro: 22, ativo: true, destaque: false, dataCadastro: '2024-01-01' },
+    { id: 4, nome: 'Maltodextrina 25kg', descricao: 'Melhora a textura ou o sabor, preserva alimentos e aumenta sua vida útil.', categoria: 'sacaria', preco: 190.00, unidade: 'sc', foto: '', sku: 'SAC-004', estoque: 250, pesoKg: 25, margemLucro: 20, ativo: true, destaque: false, dataCadastro: '2024-01-01' },
+    { id: 5, nome: 'Glucose 25kg', descricao: 'Seu principal uso é no mundo da confeitaria, mas sua aplicação é vasta.', categoria: 'sacaria', preco: 160.00, unidade: 'sc', foto: '', sku: 'SAC-005', estoque: 220, pesoKg: 25, margemLucro: 25, ativo: true, destaque: false, dataCadastro: '2024-01-01' },
+    // Linha Okey Lac 25kg
+    { id: 6, nome: 'Okey Lac Cream 25kg', descricao: 'Linha Okey Lac desenvolvida para substituição do leite em panificação, foodservice, indústrias de sorvetes e indústrias doces.', categoria: 'okey_lac', preco: 320.00, unidade: 'sc', foto: '', sku: 'OKL-001', estoque: 150, pesoKg: 25, margemLucro: 28, ativo: true, destaque: true, dataCadastro: '2024-01-05' },
+    { id: 7, nome: 'Okey Lac Pro 25kg', descricao: 'Composto lácteo para aplicações profissionais em panificação e foodservice.', categoria: 'okey_lac', preco: 310.00, unidade: 'sc', foto: '', sku: 'OKL-002', estoque: 140, pesoKg: 25, margemLucro: 27, ativo: true, destaque: false, dataCadastro: '2024-01-05' },
+    { id: 8, nome: 'Okey Lac Gourmet 25kg', descricao: 'Composto lácteo premium para aplicações gourmet e confeitaria.', categoria: 'okey_lac', preco: 340.00, unidade: 'sc', foto: '', sku: 'OKL-003', estoque: 120, pesoKg: 25, margemLucro: 30, ativo: true, destaque: false, dataCadastro: '2024-01-05' },
+    { id: 9, nome: 'Okey Lac Açaí 25kg', descricao: 'Composto lácteo especial para preparo de açaí e sorvetes.', categoria: 'okey_lac', preco: 330.00, unidade: 'sc', foto: '', sku: 'OKL-004', estoque: 100, pesoKg: 25, margemLucro: 29, ativo: true, destaque: false, dataCadastro: '2024-01-05' },
+    // VAREJO — Okey Lac
+    { id: 10, nome: 'Okey Lac Panificação e Culinária 1kg', descricao: 'Ideal para pães, bolos, cremes doces e salgados e massas de pizza.', categoria: 'varejo_lacteo', preco: 18.90, unidade: 'un', foto: '', sku: 'VAR-001', estoque: 500, pesoKg: 1, margemLucro: 32, ativo: true, destaque: true, dataCadastro: '2024-01-10' },
+    { id: 11, nome: 'Leite em Pó e Composto Lácteo 1kg', descricao: 'Fonte de cálcio e muito sabor. Feito sob medida para você. Disponível em 1kg, 400g e 200g.', categoria: 'varejo_lacteo', preco: 32.50, unidade: 'un', foto: '', sku: 'VAR-002', estoque: 600, pesoKg: 1, margemLucro: 25, ativo: true, destaque: false, dataCadastro: '2024-01-10' },
+    { id: 12, nome: 'Okey Lac 1kg', descricao: 'Produto desenvolvido como excelente acréscimo para açaí.', categoria: 'varejo_lacteo', preco: 16.90, unidade: 'un', foto: '', sku: 'VAR-003', estoque: 400, pesoKg: 1, margemLucro: 30, ativo: true, destaque: false, dataCadastro: '2024-01-10' },
+    { id: 13, nome: 'Chocominas 400g', descricao: 'Mistura de Cacau em pó para dissolução em leite.', categoria: 'varejo_lacteo', preco: 12.50, unidade: 'un', foto: '', sku: 'VAR-004', estoque: 800, pesoKg: 0.4, margemLucro: 35, ativo: true, destaque: false, dataCadastro: '2024-01-10' },
+    // CAFÉ
+    { id: 14, nome: 'Café Belveder 250g', descricao: 'Café Tradicional possui uma fragrância marcante e um aroma intenso, oriundo da torra de grãos selecionados. Disponível em 250g e 500g.', categoria: 'cafe', preco: 14.90, unidade: 'un', foto: '', sku: 'CAF-001', estoque: 350, pesoKg: 0.25, margemLucro: 28, ativo: true, destaque: false, dataCadastro: '2024-01-15' },
+    { id: 15, nome: 'Café Molito 250g', descricao: 'Torra moderadamente escura a moderadamente clara — Moagem fina a média. Disponível em 250g e 500g.', categoria: 'cafe', preco: 13.50, unidade: 'un', foto: '', sku: 'CAF-002', estoque: 400, pesoKg: 0.25, margemLucro: 26, ativo: true, destaque: false, dataCadastro: '2024-01-15' },
+    { id: 16, nome: 'Café Grão de Minas 250g', descricao: 'Tradicional e Extraforte. Disponível em 250g e 500g.', categoria: 'cafe', preco: 11.90, unidade: 'un', foto: '', sku: 'CAF-003', estoque: 450, pesoKg: 0.25, margemLucro: 24, ativo: true, destaque: false, dataCadastro: '2024-01-15' },
   ])
 
   const [activeView, setActiveView] = useState<ViewType>('dashboard')
@@ -280,7 +294,7 @@ function App() {
       ultimaInteracao: '2024-01-15',
       diasInativo: 5,
       valorEstimado: 150000,
-      produtosInteresse: ['Filé de Tilápia Congelado', 'Queijo Mussarela Fatiado']
+      produtosInteresse: ['Leite em Pó Integral 25kg', 'Okey Lac Cream 25kg']
     },
     {
       id: 2,
@@ -296,7 +310,7 @@ function App() {
       ultimaInteracao: '2024-01-18',
       diasInativo: 2,
       valorEstimado: 85000,
-      produtosInteresse: ['Refrigerante Cola 2L', 'Detergente Neutro 500ml']
+      produtosInteresse: ['Café Belveder 250g', 'Chocominas 400g', 'Okey Lac Panificação e Culinária 1kg']
     }
   ])
   const [interacoes, setInteracoes] = useState<Interacao[]>([
@@ -3988,7 +4002,7 @@ const ProdutosView: React.FC<{
 
   const [fNome, setFNome] = React.useState('')
   const [fDescricao, setFDescricao] = React.useState('')
-  const [fCategoria, setFCategoria] = React.useState<Produto['categoria']>('congelados')
+  const [fCategoria, setFCategoria] = React.useState<Produto['categoria']>('sacaria')
   const [fPreco, setFPreco] = React.useState('')
   const [fUnidade, setFUnidade] = React.useState('un')
   const [fFoto, setFFoto] = React.useState('')
@@ -4008,7 +4022,7 @@ const ProdutosView: React.FC<{
 
   const openNew = () => {
     setEditing(null)
-    setFNome(''); setFDescricao(''); setFCategoria('congelados'); setFPreco(''); setFUnidade('un')
+    setFNome(''); setFDescricao(''); setFCategoria('sacaria'); setFPreco(''); setFUnidade('sc')
     setFFoto(''); setFSku(''); setFEstoque(''); setFPesoKg(''); setFMargemLucro('')
     setFAtivo(true); setFDestaque(false); setShowModal(true)
   }
@@ -4051,8 +4065,8 @@ const ProdutosView: React.FC<{
     setShowModal(false)
   }
 
-  const catLabel: Record<string, string> = { congelados: 'Congelados', laticinios: 'Laticínios', bebidas: 'Bebidas', limpeza: 'Limpeza', outros: 'Outros' }
-  const catColor: Record<string, string> = { congelados: 'bg-cyan-100 text-cyan-800', laticinios: 'bg-yellow-100 text-yellow-800', bebidas: 'bg-purple-100 text-purple-800', limpeza: 'bg-green-100 text-green-800', outros: 'bg-gray-100 text-gray-800' }
+  const catLabel: Record<string, string> = { sacaria: 'Sacaria 25kg', okey_lac: 'Okey Lac 25kg', varejo_lacteo: 'Varejo Lácteo', cafe: 'Café', outros: 'Outros' }
+  const catColor: Record<string, string> = { sacaria: 'bg-amber-100 text-amber-800', okey_lac: 'bg-blue-100 text-blue-800', varejo_lacteo: 'bg-purple-100 text-purple-800', cafe: 'bg-yellow-100 text-yellow-900', outros: 'bg-gray-100 text-gray-800' }
 
   const previewProd = produtos.find(p => p.id === previewId)
 
@@ -4074,10 +4088,10 @@ const ProdutosView: React.FC<{
         <input type="text" placeholder="Buscar por nome ou SKU..." value={search} onChange={(e) => setSearch(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 w-72" />
         <select value={filterCategoria} onChange={(e) => setFilterCategoria(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-apple text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
           <option value="">Todas categorias</option>
-          <option value="congelados">Congelados</option>
-          <option value="laticinios">Laticínios</option>
-          <option value="bebidas">Bebidas</option>
-          <option value="limpeza">Limpeza</option>
+          <option value="sacaria">Sacaria 25kg</option>
+          <option value="okey_lac">Okey Lac 25kg</option>
+          <option value="varejo_lacteo">Varejo Lácteo</option>
+          <option value="cafe">Café</option>
           <option value="outros">Outros</option>
         </select>
         <select value={filterAtivo} onChange={(e) => setFilterAtivo(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-apple text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
@@ -4208,10 +4222,10 @@ const ProdutosView: React.FC<{
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Categoria *</label>
                   <select value={fCategoria} onChange={(e) => setFCategoria(e.target.value as Produto['categoria'])} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option value="congelados">Congelados</option>
-                    <option value="laticinios">Laticínios</option>
-                    <option value="bebidas">Bebidas</option>
-                    <option value="limpeza">Limpeza</option>
+                    <option value="sacaria">Sacaria 25kg</option>
+                    <option value="okey_lac">Okey Lac 25kg</option>
+                    <option value="varejo_lacteo">Varejo Lácteo</option>
+                    <option value="cafe">Café</option>
                     <option value="outros">Outros</option>
                   </select>
                 </div>
@@ -4226,6 +4240,7 @@ const ProdutosView: React.FC<{
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Unidade *</label>
                   <select value={fUnidade} onChange={(e) => setFUnidade(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="sc">Saco (sc)</option>
                     <option value="un">Unidade (un)</option>
                     <option value="kg">Quilograma (kg)</option>
                     <option value="cx">Caixa (cx)</option>
