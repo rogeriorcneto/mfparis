@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   HomeIcon, 
   FunnelIcon, 
@@ -10,10 +10,16 @@ import {
   BellIcon,
   XMarkIcon,
   PlusIcon,
-  SparklesIcon
+  SparklesIcon,
+  ArrowUpTrayIcon,
+  SunIcon,
+  MoonIcon,
+  AdjustmentsHorizontalIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from 'recharts'
 
-type ViewType = 'dashboard' | 'funil' | 'clientes' | 'automacoes' | 'mapa' | 'prospeccao' | 'tarefas' | 'social' | 'integracoes' | 'equipe'
+type ViewType = 'dashboard' | 'funil' | 'clientes' | 'automacoes' | 'mapa' | 'prospeccao' | 'tarefas' | 'social' | 'integracoes' | 'equipe' | 'relatorios' | 'templates'
 
 interface Cliente {
   id: number
@@ -79,6 +85,23 @@ interface Notificacao {
   clienteId?: number
 }
 
+interface Atividade {
+  id: number
+  tipo: 'moveu' | 'adicionou' | 'editou' | 'interacao' | 'tarefa'
+  descricao: string
+  vendedorNome: string
+  timestamp: string
+}
+
+interface Template {
+  id: number
+  nome: string
+  canal: 'email' | 'whatsapp'
+  etapa: string
+  assunto?: string
+  corpo: string
+}
+
 interface DashboardMetrics {
   totalLeads: number
   leadsAtivos: number
@@ -92,6 +115,9 @@ interface DashboardMetrics {
 interface DashboardViewProps {
   clientes: Cliente[]
   metrics: DashboardMetrics
+  vendedores: Vendedor[]
+  atividades: Atividade[]
+  interacoes: Interacao[]
 }
 
 interface TemplateMsg {
@@ -183,6 +209,27 @@ function App() {
   const [loginSenha, setLoginSenha] = useState('')
   const [loginError, setLoginError] = useState('')
 
+  const [darkMode, setDarkMode] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([])
+  const [atividades, setAtividades] = useState<Atividade[]>([
+    { id: 1, tipo: 'moveu', descricao: 'SuperBH Ltda movido para Negociação', vendedorNome: 'Carlos Silva', timestamp: new Date(Date.now() - 3600000).toISOString() },
+    { id: 2, tipo: 'adicionou', descricao: 'Novo lead: Rede Mineirão adicionado', vendedorNome: 'Ana Oliveira', timestamp: new Date(Date.now() - 7200000).toISOString() },
+    { id: 3, tipo: 'interacao', descricao: 'Email enviado para Distribuidora BH', vendedorNome: 'Roberto Lima', timestamp: new Date(Date.now() - 10800000).toISOString() },
+    { id: 4, tipo: 'tarefa', descricao: 'Tarefa concluída: Preparar proposta comercial', vendedorNome: 'Carlos Silva', timestamp: new Date(Date.now() - 14400000).toISOString() },
+    { id: 5, tipo: 'editou', descricao: 'Dados atualizados: Atacadão MG', vendedorNome: 'Fernanda Costa', timestamp: new Date(Date.now() - 18000000).toISOString() },
+  ])
+  const [templates, setTemplates] = useState<Template[]>([
+    { id: 1, nome: 'Primeiro Contato', canal: 'email', etapa: 'prospecção', assunto: 'Apresentação MF Paris — Soluções para seu negócio', corpo: 'Olá {nome},\n\nSou {vendedor} da MF Paris. Gostaria de apresentar nossas soluções em congelados, laticínios e bebidas para {empresa}.\n\nPodemos agendar uma conversa?\n\nAtt,\n{vendedor}' },
+    { id: 2, nome: 'Envio de Amostra', canal: 'email', etapa: 'amostra', assunto: 'Confirmação de envio de amostras — MF Paris', corpo: 'Olá {nome},\n\nConfirmamos o envio das amostras solicitadas para {empresa}. Prazo estimado: 3 dias úteis.\n\nQualquer dúvida, estou à disposição.\n\nAtt,\n{vendedor}' },
+    { id: 3, nome: 'Follow-up Homologação', canal: 'email', etapa: 'homologado', assunto: 'Como foi a avaliação? — MF Paris', corpo: 'Olá {nome},\n\nGostaria de saber como foi a avaliação dos nossos produtos em {empresa}. Podemos agendar uma reunião para discutir os próximos passos?\n\nAtt,\n{vendedor}' },
+    { id: 4, nome: 'Proposta Comercial', canal: 'email', etapa: 'negociacao', assunto: 'Proposta Comercial — MF Paris para {empresa}', corpo: 'Olá {nome},\n\nSegue em anexo nossa proposta comercial personalizada para {empresa}.\n\nCondições especiais válidas até o final do mês.\n\nAtt,\n{vendedor}' },
+    { id: 5, nome: 'Boas-vindas Pós-Venda', canal: 'email', etapa: 'pos_venda', assunto: 'Bem-vindo à MF Paris! 🎉', corpo: 'Olá {nome},\n\nÉ com grande satisfação que damos boas-vindas a {empresa} como nosso novo parceiro!\n\nSeu gerente de conta é {vendedor}. Qualquer necessidade, conte conosco.\n\nAtt,\nEquipe MF Paris' },
+    { id: 6, nome: 'Primeiro Contato WhatsApp', canal: 'whatsapp', etapa: 'prospecção', corpo: 'Olá {nome}! 👋\nSou {vendedor} da *MF Paris*. Temos soluções em congelados, laticínios e bebidas para {empresa}.\nPosso enviar nosso catálogo? 📋' },
+    { id: 7, nome: 'Lembrete de Amostra', canal: 'whatsapp', etapa: 'amostra', corpo: 'Olá {nome}! 📦\nAs amostras da *MF Paris* já foram enviadas para {empresa}. Previsão de chegada: 3 dias úteis.\nQualquer dúvida, estou aqui! 😊' },
+    { id: 8, nome: 'Follow-up WhatsApp', canal: 'whatsapp', etapa: 'negociacao', corpo: 'Olá {nome}! 🤝\nComo está a análise da nossa proposta para {empresa}?\nTemos condições especiais este mês. Posso ajudar em algo? 💬' },
+  ])
+
   const [activeView, setActiveView] = useState<ViewType>('dashboard')
   const [showModal, setShowModal] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
@@ -238,10 +285,7 @@ function App() {
   const [aiCommand, setAICommand] = useState('')
   const [aiResponse, setAIResponse] = useState('')
   const [isAILoading, setIsAILoading] = useState(false)
-  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([])
-  const [showNotifications, setShowNotifications] = useState(false)
-
-  const [templates, setTemplates] = useState<TemplateMsg[]>([
+  const [templatesMsgs, setTemplatesMsgs] = useState<TemplateMsg[]>([
     {
       id: 1,
       canal: 'whatsapp',
@@ -322,6 +366,34 @@ function App() {
     { id: 3, nome: 'Roberto Lima', email: 'roberto@mfparis.com.br', telefone: '(31) 99999-0003', cargo: 'sdr', avatar: 'RL', usuario: 'roberto', senha: 'roberto123', metaVendas: 120000, metaLeads: 15, metaConversao: 10, ativo: true },
     { id: 4, nome: 'Fernanda Costa', email: 'fernanda@mfparis.com.br', telefone: '(31) 99999-0004', cargo: 'gerente', avatar: 'FC', usuario: 'admin', senha: 'admin123', metaVendas: 500000, metaLeads: 20, metaConversao: 15, ativo: true }
   ])
+
+  const [showMotivoPerda, setShowMotivoPerda] = useState(false)
+  const [motivoPerdaTexto, setMotivoPerdaTexto] = useState('')
+  const [pendingDrop, setPendingDrop] = useState<{ e: React.DragEvent, toStage: string } | null>(null)
+
+  // Generate notifications from data
+  useEffect(() => {
+    const novas: Notificacao[] = []
+    let nId = 1
+    clientes.forEach(c => {
+      if ((c.diasInativo || 0) > 10) {
+        novas.push({ id: nId++, tipo: 'warning', titulo: 'Cliente inativo', mensagem: `${c.razaoSocial} está inativo há ${c.diasInativo} dias`, timestamp: new Date().toISOString(), lida: false, clienteId: c.id })
+      }
+    })
+    tarefas.forEach(t => {
+      if (t.status === 'pendente') {
+        novas.push({ id: nId++, tipo: 'info', titulo: 'Tarefa pendente', mensagem: `${t.titulo} — ${t.descricao}`, timestamp: new Date().toISOString(), lida: false, clienteId: t.clienteId })
+      }
+    })
+    vendedores.forEach(v => {
+      const clientesV = clientes.filter(c => c.vendedorId === v.id)
+      const valorPipeline = clientesV.reduce((s, c) => s + (c.valorEstimado || 0), 0)
+      if (valorPipeline < v.metaVendas * 0.5 && v.ativo) {
+        novas.push({ id: nId++, tipo: 'error', titulo: 'Meta em risco', mensagem: `${v.nome} está abaixo de 50% da meta de vendas`, timestamp: new Date().toISOString(), lida: false })
+      }
+    })
+    setNotificacoes(novas)
+  }, [clientes, tarefas, vendedores])
 
   const [formData, setFormData] = useState<FormData>({
     razaoSocial: '',
@@ -654,13 +726,34 @@ function App() {
   const handleDrop = (e: React.DragEvent, toStage: string) => {
     e.preventDefault()
     if (draggedItem && draggedItem.fromStage !== toStage) {
+      if (toStage === 'perdido') {
+        setPendingDrop({ e, toStage })
+        setShowMotivoPerda(true)
+        return
+      }
       setClientes(prev => prev.map(c => 
         c.id === draggedItem.cliente.id 
           ? { ...c, etapa: toStage }
           : c
       ))
+      setAtividades(prev => [{ id: Date.now(), tipo: 'moveu', descricao: `${draggedItem.cliente.razaoSocial} movido para ${toStage}`, vendedorNome: loggedUser?.nome || 'Sistema', timestamp: new Date().toISOString() }, ...prev])
     }
     setDraggedItem(null)
+  }
+
+  const confirmPerda = () => {
+    if (draggedItem && pendingDrop) {
+      setClientes(prev => prev.map(c => 
+        c.id === draggedItem.cliente.id 
+          ? { ...c, etapa: 'perdido', motivoPerda: motivoPerdaTexto || 'Não informado' }
+          : c
+      ))
+      setAtividades(prev => [{ id: Date.now(), tipo: 'moveu', descricao: `${draggedItem.cliente.razaoSocial} marcado como Perdido: ${motivoPerdaTexto || 'Não informado'}`, vendedorNome: loggedUser?.nome || 'Sistema', timestamp: new Date().toISOString() }, ...prev])
+    }
+    setDraggedItem(null)
+    setPendingDrop(null)
+    setShowMotivoPerda(false)
+    setMotivoPerdaTexto('')
   }
 
   const openModal = () => {
@@ -684,7 +777,7 @@ function App() {
     const dashboardMetrics = calculateDashboardMetrics()
     switch (activeView) {
       case 'dashboard':
-        return <DashboardView clientes={clientes} metrics={dashboardMetrics} />
+        return <DashboardView clientes={clientes} metrics={dashboardMetrics} vendedores={vendedores} atividades={atividades} interacoes={interacoes} />
       case 'funil':
         return <FunilView 
           clientes={clientes} 
@@ -708,14 +801,14 @@ function App() {
           <ProspeccaoView
             clientes={clientes}
             interacoes={interacoes}
-            templates={templates}
+            templates={templatesMsgs}
             cadencias={cadencias}
             campanhas={campanhas}
             jobs={jobs}
             onQuickAction={handleQuickAction}
             onStartCampanha={startCampanha}
             onRunJobNow={runJobNow}
-            onCreateTemplate={(t: TemplateMsg) => setTemplates(prev => [t, ...prev])}
+            onCreateTemplate={(t: TemplateMsg) => setTemplatesMsgs(prev => [t, ...prev])}
             onCreateCampanha={(c: Campanha) => setCampanhas(prev => [c, ...prev])}
           />
         )
@@ -727,8 +820,12 @@ function App() {
         return <IntegracoesView />
       case 'equipe':
         return <VendedoresView vendedores={vendedores} clientes={clientes} onAddVendedor={(v) => setVendedores(prev => [...prev, v])} onUpdateVendedor={(v) => setVendedores(prev => prev.map(x => x.id === v.id ? v : x))} />
+      case 'relatorios':
+        return <RelatoriosView clientes={clientes} vendedores={vendedores} interacoes={interacoes} />
+      case 'templates':
+        return <TemplatesView templates={templates} onAdd={(t) => setTemplates(prev => [...prev, t])} onDelete={(id) => setTemplates(prev => prev.filter(t => t.id !== id))} />
       default:
-        return <DashboardView clientes={clientes} metrics={dashboardMetrics} />
+        return <DashboardView clientes={clientes} metrics={dashboardMetrics} vendedores={vendedores} atividades={atividades} interacoes={interacoes} />
     }
   }
 
@@ -818,12 +915,12 @@ function App() {
   }
 
   return (
-    <div className="h-screen flex bg-gray-50">
-      {/* Sidebar - Apple style */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+    <div className={`h-screen flex ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      {/* Sidebar */}
+      <div className={`w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r flex flex-col`}>
         {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-gray-200">
-          <h1 className="text-xl font-semibold text-gray-900">MF Paris</h1>
+        <div className={`h-16 flex items-center px-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <h1 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>MF Paris</h1>
         </div>
 
         {/* Navigation */}
@@ -968,6 +1065,34 @@ function App() {
             Equipe
           </button>
 
+          <button
+            onClick={() => setActiveView('relatorios')}
+            className={`
+              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
+              ${activeView === 'relatorios'
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }
+            `}
+          >
+            <ChartBarIcon className="mr-3 h-5 w-5" />
+            Relatórios
+          </button>
+
+          <button
+            onClick={() => setActiveView('templates')}
+            className={`
+              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
+              ${activeView === 'templates'
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }
+            `}
+          >
+            <DocumentTextIcon className="mr-3 h-5 w-5" />
+            Templates
+          </button>
+
           <div className="border-t border-gray-200 pt-4 mt-4">
             <button
               onClick={() => setShowAIModal(true)}
@@ -1007,8 +1132,8 @@ function App() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar */}
-        <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div className={`h-16 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b flex items-center justify-between px-6`}>
+          <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             {activeView === 'dashboard' && 'Visão Geral'}
             {activeView === 'funil' && 'Funil de Vendas'}
             {activeView === 'clientes' && 'Clientes'}
@@ -1019,12 +1144,54 @@ function App() {
             {activeView === 'social' && 'Busca por Redes Sociais'}
             {activeView === 'integracoes' && 'Integrações'}
             {activeView === 'equipe' && 'Equipe de Vendas'}
+            {activeView === 'relatorios' && 'Relatórios e Gráficos'}
+            {activeView === 'templates' && 'Templates de Mensagens'}
           </h2>
           
-          <div className="flex items-center space-x-4">
-            <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-              <BellIcon className="h-5 w-5" />
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-apple hover:bg-gray-100"
+              title={darkMode ? 'Modo claro' : 'Modo escuro'}
+            >
+              {darkMode ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
             </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-apple hover:bg-gray-100 relative"
+              >
+                <BellIcon className="h-5 w-5" />
+                {notificacoes.filter(n => !n.lida).length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {notificacoes.filter(n => !n.lida).length}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute right-0 top-12 w-96 bg-white rounded-apple shadow-apple-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                  <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-900">Notificações</h3>
+                    <button onClick={() => setNotificacoes(prev => prev.map(n => ({ ...n, lida: true })))} className="text-xs text-primary-600 hover:text-primary-800">Marcar todas como lidas</button>
+                  </div>
+                  {notificacoes.length === 0 ? (
+                    <div className="p-6 text-center text-gray-500 text-sm">Nenhuma notificação</div>
+                  ) : (
+                    notificacoes.map(n => (
+                      <div key={n.id} className={`p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${!n.lida ? 'bg-blue-50' : ''}`} onClick={() => setNotificacoes(prev => prev.map(x => x.id === n.id ? { ...x, lida: true } : x))}>
+                        <div className="flex items-start gap-2">
+                          <span className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${n.tipo === 'warning' ? 'bg-yellow-500' : n.tipo === 'error' ? 'bg-red-500' : n.tipo === 'success' ? 'bg-green-500' : 'bg-blue-500'}`}></span>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{n.titulo}</p>
+                            <p className="text-xs text-gray-600 mt-0.5">{n.mensagem}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -1335,106 +1502,86 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Modal Motivo de Perda */}
+      {showMotivoPerda && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-apple shadow-apple-lg max-w-md w-full p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Motivo da Perda</h2>
+            <p className="text-sm text-gray-600 mb-4">Informe o motivo pelo qual este lead foi perdido:</p>
+            <select
+              value={motivoPerdaTexto}
+              onChange={(e) => setMotivoPerdaTexto(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 mb-3"
+            >
+              <option value="">Selecione um motivo...</option>
+              <option value="Preço alto">Preço alto</option>
+              <option value="Concorrente escolhido">Concorrente escolhido</option>
+              <option value="Sem orçamento">Sem orçamento</option>
+              <option value="Sem resposta">Sem resposta / Ghosting</option>
+              <option value="Produto não atende">Produto não atende</option>
+              <option value="Timing ruim">Timing ruim</option>
+              <option value="Outro">Outro</option>
+            </select>
+            {motivoPerdaTexto === 'Outro' && (
+              <input
+                type="text"
+                placeholder="Descreva o motivo..."
+                onChange={(e) => setMotivoPerdaTexto(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 mb-3"
+              />
+            )}
+            <div className="flex justify-end gap-3">
+              <button onClick={() => { setShowMotivoPerda(false); setDraggedItem(null); setPendingDrop(null); setMotivoPerdaTexto('') }} className="px-4 py-2 bg-white border border-gray-300 rounded-apple hover:bg-gray-50">Cancelar</button>
+              <button onClick={confirmPerda} className="px-4 py-2 bg-red-600 text-white rounded-apple hover:bg-red-700">Confirmar Perda</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 // Dashboard View
-const DashboardView: React.FC<DashboardViewProps> = ({ clientes, metrics }) => {
+const DashboardView: React.FC<DashboardViewProps> = ({ clientes, metrics, vendedores, atividades, interacoes }) => {
+  const stages = ['prospecção', 'amostra', 'homologado', 'negociacao', 'pos_venda', 'perdido']
+  const stageLabels: Record<string, string> = { 'prospecção': 'Prospecção', 'amostra': 'Amostra', 'homologado': 'Homologado', 'negociacao': 'Negociação', 'pos_venda': 'Pós-Venda', 'perdido': 'Perdido' }
+  const pipelineData = stages.map(s => ({
+    name: stageLabels[s] || s,
+    valor: clientes.filter(c => c.etapa === s).reduce((sum, c) => sum + (c.valorEstimado || 0), 0),
+    qtd: clientes.filter(c => c.etapa === s).length
+  }))
+  const COLORS = ['#3B82F6', '#EAB308', '#22C55E', '#A855F7', '#EC4899', '#EF4444']
+
+  const vendedorData = vendedores.filter(v => v.ativo).map(v => ({
+    name: v.nome.split(' ')[0],
+    pipeline: clientes.filter(c => c.vendedorId === v.id).reduce((s, c) => s + (c.valorEstimado || 0), 0),
+    leads: clientes.filter(c => c.vendedorId === v.id).length
+  }))
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Visão geral das suas vendas e métricas em tempo real
-        </p>
+        <p className="mt-1 text-sm text-gray-600">Visão geral das suas vendas e métricas em tempo real</p>
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Leads</p>
-              <p className="text-2xl font-bold text-gray-900">{metrics.totalLeads}</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-blue-600 font-medium">📊</span>
-            </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        {[
+          { label: 'Total Leads', value: metrics.totalLeads, icon: '📊', color: 'blue' },
+          { label: 'Leads Ativos', value: metrics.leadsAtivos, icon: '✓', color: 'green' },
+          { label: 'Conversão', value: `${metrics.taxaConversao.toFixed(1)}%`, icon: '📈', color: 'purple' },
+          { label: 'Valor Total', value: `R$ ${metrics.valorTotal.toLocaleString('pt-BR')}`, icon: '💰', color: 'gray' },
+          { label: 'Ticket Médio', value: `R$ ${metrics.ticketMedio.toLocaleString('pt-BR')}`, icon: '🎯', color: 'orange' },
+          { label: 'Novos Hoje', value: metrics.leadsNovosHoje, icon: '🆕', color: 'blue' },
+          { label: 'Interações', value: metrics.interacoesHoje, icon: '💬', color: 'indigo' },
+        ].map((m, i) => (
+          <div key={i} className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-4">
+            <p className="text-xs font-medium text-gray-500">{m.label}</p>
+            <p className="text-lg font-bold text-gray-900 mt-1">{m.value}</p>
           </div>
-        </div>
-
-        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Leads Ativos</p>
-              <p className="text-2xl font-bold text-green-600">{metrics.leadsAtivos}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-green-600 font-medium">✓</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Taxa Conversão</p>
-              <p className="text-2xl font-bold text-purple-600">{metrics.taxaConversao.toFixed(1)}%</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-              <span className="text-purple-600 font-medium">📈</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Valor Total</p>
-              <p className="text-2xl font-bold text-gray-900">R$ {metrics.valorTotal.toLocaleString('pt-BR')}</p>
-            </div>
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-              <span className="text-gray-600 font-medium">💰</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Ticket Médio</p>
-              <p className="text-2xl font-bold text-gray-900">R$ {metrics.ticketMedio.toLocaleString('pt-BR')}</p>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-              <span className="text-orange-600 font-medium">📊</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Hoje</p>
-              <p className="text-2xl font-bold text-blue-600">{metrics.leadsNovosHoje}</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-blue-600 font-medium">📈</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Interações</p>
-              <p className="text-2xl font-bold text-gray-900">{metrics.interacoesHoje}</p>
-            </div>
-            <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-              <span className="text-indigo-600 font-medium">💬</span>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Metas de Vendas */}
@@ -1542,25 +1689,63 @@ const DashboardView: React.FC<DashboardViewProps> = ({ clientes, metrics }) => {
         )
       })()}
 
-      {/* Recent Activity */}
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Pipeline por Etapa */}
+        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Pipeline por Etapa (R$)</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={pipelineData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+              <Tooltip formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Valor']} />
+              <Bar dataKey="valor" radius={[6, 6, 0, 0]}>
+                {pipelineData.map((_entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Pipeline por Vendedor */}
+        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">👥 Pipeline por Vendedor (R$)</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={vendedorData} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+              <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={70} />
+              <Tooltip formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Pipeline']} />
+              <Bar dataKey="pipeline" fill="#6366F1" radius={[0, 6, 6, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Activity Feed */}
       <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Atividade Recente</h3>
+          <h3 className="text-lg font-semibold text-gray-900">⚡ Atividades Recentes</h3>
         </div>
-        <div className="p-6">
-          <div className="space-y-3">
-            {clientes.slice(0, 5).map((cliente) => (
-              <div key={cliente.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-apple hover:bg-gray-100 transition-colors duration-200">
-                <div className="w-2 h-2 bg-primary-600 rounded-full flex-shrink-0"></div>
-                <div className="flex-1">
-                  <div>
-                    <p className="font-medium text-sm text-gray-900">{cliente.razaoSocial}</p>
-                    <p className="text-xs text-gray-500">{cliente.contatoNome}</p>
-                  </div>
-                </div>
+        <div className="divide-y divide-gray-100">
+          {atividades.slice(0, 8).map((a) => (
+            <div key={a.id} className="px-6 py-3 flex items-center gap-3 hover:bg-gray-50">
+              <span className="text-lg flex-shrink-0">
+                {a.tipo === 'moveu' && '🔄'}
+                {a.tipo === 'adicionou' && '➕'}
+                {a.tipo === 'editou' && '✏️'}
+                {a.tipo === 'interacao' && '💬'}
+                {a.tipo === 'tarefa' && '✅'}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-900 truncate">{a.descricao}</p>
+                <p className="text-xs text-gray-500">{a.vendedorNome} — {new Date(a.timestamp).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
+          {atividades.length === 0 && <div className="p-6 text-center text-gray-500 text-sm">Nenhuma atividade registrada</div>}
         </div>
       </div>
     </div>
@@ -1587,12 +1772,13 @@ const FunilView: React.FC<FunilViewProps> = ({ clientes, onDragStart, onDragOver
           onDrop={(e) => onDrop(e, stage.key)}
         >
           <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="font-medium text-gray-900">{stage.title}</h3>
               <span className={`px-2 py-1 text-xs font-medium rounded-full bg-${stage.color}-100 text-${stage.color}-800`}>
                 {clientes.filter(c => c.etapa === stage.key).length}
               </span>
             </div>
+            <p className="text-xs font-semibold text-gray-500 mb-3">R$ {clientes.filter(c => c.etapa === stage.key).reduce((s, c) => s + (c.valorEstimado || 0), 0).toLocaleString('pt-BR')}</p>
             <div className="space-y-2 min-h-[300px]">
               {clientes
                 .filter(c => c.etapa === stage.key)
@@ -1623,12 +1809,23 @@ const FunilView: React.FC<FunilViewProps> = ({ clientes, onDragStart, onDragOver
 // Clientes View
 const ClientesView: React.FC<ClientesViewProps> = ({ clientes, vendedores, onNewCliente, onEditCliente }) => {
   const [searchTerm, setSearchTerm] = React.useState('')
+  const [showFilters, setShowFilters] = React.useState(false)
+  const [filterEtapa, setFilterEtapa] = React.useState('')
+  const [filterVendedor, setFilterVendedor] = React.useState('')
+  const [filterScoreMin, setFilterScoreMin] = React.useState('')
+  const [filterValorMin, setFilterValorMin] = React.useState('')
+  const [selectedClienteId, setSelectedClienteId] = React.useState<number | null>(null)
   
-  const filteredClientes = clientes.filter(cliente =>
-    cliente.razaoSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cliente.contatoNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cliente.cnpj.includes(searchTerm)
-  )
+  const filteredClientes = clientes.filter(cliente => {
+    const matchSearch = cliente.razaoSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cliente.contatoNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cliente.cnpj.includes(searchTerm)
+    const matchEtapa = !filterEtapa || cliente.etapa === filterEtapa
+    const matchVendedor = !filterVendedor || String(cliente.vendedorId) === filterVendedor
+    const matchScore = !filterScoreMin || (cliente.score || 0) >= Number(filterScoreMin)
+    const matchValor = !filterValorMin || (cliente.valorEstimado || 0) >= Number(filterValorMin)
+    return matchSearch && matchEtapa && matchVendedor && matchScore && matchValor
+  })
 
   const getEtapaColor = (etapa: string) => {
     switch (etapa) {
@@ -1690,6 +1887,13 @@ const ClientesView: React.FC<ClientesViewProps> = ({ clientes, vendedores, onNew
           >
             📤 Exportar CSV
           </button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`py-2 px-4 rounded-apple transition-colors duration-200 shadow-apple-sm border flex items-center font-medium ${showFilters ? 'bg-primary-50 text-primary-700 border-primary-300' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-300'}`}
+          >
+            <AdjustmentsHorizontalIcon className="h-4 w-4 mr-2" />
+            Filtros
+          </button>
           <button 
             onClick={onNewCliente}
             className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-apple transition-colors duration-200 shadow-apple-sm flex items-center"
@@ -1699,6 +1903,44 @@ const ClientesView: React.FC<ClientesViewProps> = ({ clientes, vendedores, onNew
           </button>
         </div>
       </div>
+
+      {showFilters && (
+        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Etapa</label>
+              <select value={filterEtapa} onChange={(e) => setFilterEtapa(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">Todas</option>
+                <option value="prospecção">Prospecção</option>
+                <option value="amostra">Amostra</option>
+                <option value="homologado">Homologado</option>
+                <option value="negociacao">Negociação</option>
+                <option value="pos_venda">Pós-Venda</option>
+                <option value="perdido">Perdido</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Vendedor</label>
+              <select value={filterVendedor} onChange={(e) => setFilterVendedor(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">Todos</option>
+                {vendedores.filter(v => v.ativo).map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Score mínimo</label>
+              <input type="number" value={filterScoreMin} onChange={(e) => setFilterScoreMin(e.target.value)} placeholder="0" className="w-full px-3 py-2 border border-gray-300 rounded-apple text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Valor mínimo (R$)</label>
+              <input type="number" value={filterValorMin} onChange={(e) => setFilterValorMin(e.target.value)} placeholder="0" className="w-full px-3 py-2 border border-gray-300 rounded-apple text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            </div>
+          </div>
+          <div className="flex justify-between items-center mt-3">
+            <p className="text-xs text-gray-500">{filteredClientes.length} de {clientes.length} clientes</p>
+            <button onClick={() => { setFilterEtapa(''); setFilterVendedor(''); setFilterScoreMin(''); setFilterValorMin('') }} className="text-xs text-primary-600 hover:text-primary-800 font-medium">Limpar filtros</button>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200">
         <div className="overflow-x-auto">
@@ -3316,6 +3558,282 @@ const MapaView: React.FC<{ clientes: Cliente[] }> = ({ clientes }) => {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// Relatórios View
+const RelatoriosView: React.FC<{ clientes: Cliente[], vendedores: Vendedor[], interacoes: Interacao[] }> = ({ clientes, vendedores, interacoes }) => {
+  const stages = ['prospecção', 'amostra', 'homologado', 'negociacao', 'pos_venda', 'perdido']
+  const stageLabels: Record<string, string> = { 'prospecção': 'Prospecção', 'amostra': 'Amostra', 'homologado': 'Homologado', 'negociacao': 'Negociação', 'pos_venda': 'Pós-Venda', 'perdido': 'Perdido' }
+  const COLORS = ['#3B82F6', '#EAB308', '#22C55E', '#A855F7', '#EC4899', '#EF4444']
+
+  const pipelineData = stages.map(s => ({
+    name: stageLabels[s] || s,
+    valor: clientes.filter(c => c.etapa === s).reduce((sum, c) => sum + (c.valorEstimado || 0), 0),
+    qtd: clientes.filter(c => c.etapa === s).length
+  }))
+
+  const pieData = stages.map(s => ({
+    name: stageLabels[s] || s,
+    value: clientes.filter(c => c.etapa === s).length
+  })).filter(d => d.value > 0)
+
+  const vendedorData = vendedores.filter(v => v.ativo).map(v => {
+    const cv = clientes.filter(c => c.vendedorId === v.id)
+    return {
+      name: v.nome.split(' ')[0],
+      pipeline: cv.reduce((s, c) => s + (c.valorEstimado || 0), 0),
+      leads: cv.length,
+      conversoes: cv.filter(c => c.etapa === 'pos_venda').length
+    }
+  })
+
+  const interacaoData = ['email', 'whatsapp', 'linkedin', 'instagram', 'ligacao', 'reuniao'].map(tipo => ({
+    name: tipo.charAt(0).toUpperCase() + tipo.slice(1),
+    qtd: interacoes.filter(i => i.tipo === tipo).length
+  })).filter(d => d.qtd > 0)
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-900">Relatórios e Gráficos</h1>
+        <p className="mt-1 text-sm text-gray-600">Análise visual completa do pipeline, vendedores e interações</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Pipeline por Etapa (R$)</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={pipelineData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+              <Tooltip formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Valor']} />
+              <Bar dataKey="valor" radius={[6, 6, 0, 0]}>
+                {pipelineData.map((_e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">🥧 Distribuição de Leads</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <PieChart>
+              <Pie data={pieData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                {pieData.map((_e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">👥 Desempenho por Vendedor</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={vendedorData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+              <Tooltip formatter={(value: number, name: string) => [name === 'pipeline' ? `R$ ${value.toLocaleString('pt-BR')}` : value, name === 'pipeline' ? 'Pipeline' : name === 'leads' ? 'Leads' : 'Conversões']} />
+              <Bar dataKey="pipeline" fill="#6366F1" name="Pipeline" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">💬 Interações por Canal</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={interacaoData} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis type="number" tick={{ fontSize: 11 }} />
+              <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={80} />
+              <Tooltip />
+              <Bar dataKey="qtd" fill="#10B981" name="Quantidade" radius={[0, 6, 6, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">📋 Resumo Executivo</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-4 bg-blue-50 rounded-apple border border-blue-200">
+            <p className="text-xs text-blue-600 font-medium">Total Pipeline</p>
+            <p className="text-xl font-bold text-blue-900">R$ {clientes.reduce((s, c) => s + (c.valorEstimado || 0), 0).toLocaleString('pt-BR')}</p>
+          </div>
+          <div className="p-4 bg-green-50 rounded-apple border border-green-200">
+            <p className="text-xs text-green-600 font-medium">Vendas Fechadas</p>
+            <p className="text-xl font-bold text-green-900">R$ {clientes.filter(c => c.etapa === 'pos_venda').reduce((s, c) => s + (c.valorEstimado || 0), 0).toLocaleString('pt-BR')}</p>
+          </div>
+          <div className="p-4 bg-red-50 rounded-apple border border-red-200">
+            <p className="text-xs text-red-600 font-medium">Perdidos</p>
+            <p className="text-xl font-bold text-red-900">{clientes.filter(c => c.etapa === 'perdido').length} leads</p>
+          </div>
+          <div className="p-4 bg-purple-50 rounded-apple border border-purple-200">
+            <p className="text-xs text-purple-600 font-medium">Taxa Conversão</p>
+            <p className="text-xl font-bold text-purple-900">{clientes.length > 0 ? ((clientes.filter(c => c.etapa === 'pos_venda').length / clientes.length) * 100).toFixed(1) : 0}%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Templates View
+const TemplatesView: React.FC<{ templates: Template[], onAdd: (t: Template) => void, onDelete: (id: number) => void }> = ({ templates, onAdd, onDelete }) => {
+  const [showModal, setShowModal] = React.useState(false)
+  const [filterCanal, setFilterCanal] = React.useState<string>('')
+  const [filterEtapa, setFilterEtapa] = React.useState<string>('')
+  const [newNome, setNewNome] = React.useState('')
+  const [newCanal, setNewCanal] = React.useState<'email' | 'whatsapp'>('email')
+  const [newEtapa, setNewEtapa] = React.useState('prospecção')
+  const [newAssunto, setNewAssunto] = React.useState('')
+  const [newCorpo, setNewCorpo] = React.useState('')
+  const [previewId, setPreviewId] = React.useState<number | null>(null)
+
+  const filtered = templates.filter(t => {
+    return (!filterCanal || t.canal === filterCanal) && (!filterEtapa || t.etapa === filterEtapa)
+  })
+
+  const handleAdd = () => {
+    if (!newNome.trim() || !newCorpo.trim()) return
+    onAdd({ id: Date.now(), nome: newNome.trim(), canal: newCanal, etapa: newEtapa, assunto: newAssunto.trim() || undefined, corpo: newCorpo.trim() })
+    setNewNome(''); setNewAssunto(''); setNewCorpo(''); setShowModal(false)
+  }
+
+  const previewTemplate = templates.find(t => t.id === previewId)
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Templates de Mensagens</h1>
+          <p className="mt-1 text-sm text-gray-600">Modelos prontos de email e WhatsApp para cada etapa do funil</p>
+        </div>
+        <button onClick={() => setShowModal(true)} className="px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 shadow-apple-sm flex items-center">
+          <PlusIcon className="h-4 w-4 mr-2" /> Novo Template
+        </button>
+      </div>
+
+      <div className="flex gap-3">
+        <select value={filterCanal} onChange={(e) => setFilterCanal(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-apple text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+          <option value="">Todos os canais</option>
+          <option value="email">Email</option>
+          <option value="whatsapp">WhatsApp</option>
+        </select>
+        <select value={filterEtapa} onChange={(e) => setFilterEtapa(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-apple text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+          <option value="">Todas as etapas</option>
+          <option value="prospecção">Prospecção</option>
+          <option value="amostra">Amostra</option>
+          <option value="homologado">Homologado</option>
+          <option value="negociacao">Negociação</option>
+          <option value="pos_venda">Pós-Venda</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filtered.map(t => (
+          <div key={t.id} className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-5 hover:shadow-apple transition-shadow">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${t.canal === 'email' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                  {t.canal === 'email' ? '📧 Email' : '💬 WhatsApp'}
+                </span>
+                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
+                  {t.etapa}
+                </span>
+              </div>
+              <button onClick={() => onDelete(t.id)} className="text-gray-400 hover:text-red-500 text-xs">✕</button>
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-1">{t.nome}</h3>
+            {t.assunto && <p className="text-xs text-gray-500 mb-2">Assunto: {t.assunto}</p>}
+            <p className="text-sm text-gray-600 line-clamp-3 whitespace-pre-line">{t.corpo.slice(0, 120)}...</p>
+            <button onClick={() => setPreviewId(t.id)} className="mt-3 text-xs text-primary-600 hover:text-primary-800 font-medium">Ver completo →</button>
+          </div>
+        ))}
+      </div>
+
+      {previewTemplate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-apple shadow-apple-lg max-w-lg w-full p-6 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">{previewTemplate.nome}</h2>
+                <div className="flex gap-2 mt-1">
+                  <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${previewTemplate.canal === 'email' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                    {previewTemplate.canal === 'email' ? '📧 Email' : '💬 WhatsApp'}
+                  </span>
+                  <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700">{previewTemplate.etapa}</span>
+                </div>
+              </div>
+              <button onClick={() => setPreviewId(null)} className="text-gray-400 hover:text-gray-600"><XMarkIcon className="h-6 w-6" /></button>
+            </div>
+            {previewTemplate.assunto && (
+              <div className="mb-3 p-3 bg-gray-50 rounded-apple border border-gray-200">
+                <p className="text-xs text-gray-500">Assunto</p>
+                <p className="text-sm font-medium text-gray-900">{previewTemplate.assunto}</p>
+              </div>
+            )}
+            <div className="p-4 bg-gray-50 rounded-apple border border-gray-200 whitespace-pre-line text-sm text-gray-800">
+              {previewTemplate.corpo}
+            </div>
+            <p className="text-xs text-gray-500 mt-3">Variáveis: {'{nome}'}, {'{empresa}'}, {'{vendedor}'}</p>
+          </div>
+        </div>
+      )}
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-apple shadow-apple-lg max-w-lg w-full p-6">
+            <div className="flex items-start justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Novo Template</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><XMarkIcon className="h-6 w-6" /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+                <input value={newNome} onChange={(e) => setNewNome(e.target.value)} placeholder="Ex: Follow-up Pós-Reunião" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Canal</label>
+                  <select value={newCanal} onChange={(e) => setNewCanal(e.target.value as 'email' | 'whatsapp')} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="email">Email</option>
+                    <option value="whatsapp">WhatsApp</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Etapa</label>
+                  <select value={newEtapa} onChange={(e) => setNewEtapa(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="prospecção">Prospecção</option>
+                    <option value="amostra">Amostra</option>
+                    <option value="homologado">Homologado</option>
+                    <option value="negociacao">Negociação</option>
+                    <option value="pos_venda">Pós-Venda</option>
+                  </select>
+                </div>
+              </div>
+              {newCanal === 'email' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assunto</label>
+                  <input value={newAssunto} onChange={(e) => setNewAssunto(e.target.value)} placeholder="Assunto do email" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Corpo da mensagem *</label>
+                <textarea value={newCorpo} onChange={(e) => setNewCorpo(e.target.value)} rows={6} placeholder="Use {nome}, {empresa}, {vendedor} como variáveis..." className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 bg-white border border-gray-300 rounded-apple hover:bg-gray-50">Cancelar</button>
+              <button onClick={handleAdd} disabled={!newNome.trim() || !newCorpo.trim()} className="px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 disabled:bg-gray-400 shadow-apple-sm">Criar Template</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
