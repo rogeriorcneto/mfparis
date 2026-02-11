@@ -155,6 +155,8 @@ interface Vendedor {
   telefone: string
   cargo: 'vendedor' | 'gerente' | 'sdr'
   avatar: string
+  usuario: string
+  senha: string
   metaVendas: number
   metaLeads: number
   metaConversao: number
@@ -176,6 +178,11 @@ interface ClientesViewProps {
 }
 
 function App() {
+  const [loggedUser, setLoggedUser] = useState<Vendedor | null>(null)
+  const [loginUsuario, setLoginUsuario] = useState('')
+  const [loginSenha, setLoginSenha] = useState('')
+  const [loginError, setLoginError] = useState('')
+
   const [activeView, setActiveView] = useState<ViewType>('dashboard')
   const [showModal, setShowModal] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
@@ -310,10 +317,10 @@ function App() {
     }
   ])
   const [vendedores, setVendedores] = useState<Vendedor[]>([
-    { id: 1, nome: 'Carlos Silva', email: 'carlos@mfparis.com.br', telefone: '(31) 99999-0001', cargo: 'vendedor', avatar: 'CS', metaVendas: 200000, metaLeads: 10, metaConversao: 20, ativo: true },
-    { id: 2, nome: 'Ana Oliveira', email: 'ana@mfparis.com.br', telefone: '(31) 99999-0002', cargo: 'vendedor', avatar: 'AO', metaVendas: 180000, metaLeads: 8, metaConversao: 18, ativo: true },
-    { id: 3, nome: 'Roberto Lima', email: 'roberto@mfparis.com.br', telefone: '(31) 99999-0003', cargo: 'sdr', avatar: 'RL', metaVendas: 120000, metaLeads: 15, metaConversao: 10, ativo: true },
-    { id: 4, nome: 'Fernanda Costa', email: 'fernanda@mfparis.com.br', telefone: '(31) 99999-0004', cargo: 'gerente', avatar: 'FC', metaVendas: 500000, metaLeads: 20, metaConversao: 15, ativo: true }
+    { id: 1, nome: 'Carlos Silva', email: 'carlos@mfparis.com.br', telefone: '(31) 99999-0001', cargo: 'vendedor', avatar: 'CS', usuario: 'carlos', senha: 'carlos123', metaVendas: 200000, metaLeads: 10, metaConversao: 20, ativo: true },
+    { id: 2, nome: 'Ana Oliveira', email: 'ana@mfparis.com.br', telefone: '(31) 99999-0002', cargo: 'vendedor', avatar: 'AO', usuario: 'ana', senha: 'ana123', metaVendas: 180000, metaLeads: 8, metaConversao: 18, ativo: true },
+    { id: 3, nome: 'Roberto Lima', email: 'roberto@mfparis.com.br', telefone: '(31) 99999-0003', cargo: 'sdr', avatar: 'RL', usuario: 'roberto', senha: 'roberto123', metaVendas: 120000, metaLeads: 15, metaConversao: 10, ativo: true },
+    { id: 4, nome: 'Fernanda Costa', email: 'fernanda@mfparis.com.br', telefone: '(31) 99999-0004', cargo: 'gerente', avatar: 'FC', usuario: 'admin', senha: 'admin123', metaVendas: 500000, metaLeads: 20, metaConversao: 15, ativo: true }
   ])
 
   const [formData, setFormData] = useState<FormData>({
@@ -725,6 +732,91 @@ function App() {
     }
   }
 
+  const handleLogin = () => {
+    setLoginError('')
+    const user = vendedores.find(v => v.usuario === loginUsuario.trim() && v.senha === loginSenha && v.ativo)
+    if (user) {
+      setLoggedUser(user)
+      setLoginUsuario('')
+      setLoginSenha('')
+    } else {
+      setLoginError('Usuário ou senha inválidos')
+    }
+  }
+
+  if (!loggedUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-700 to-blue-800 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-white rounded-2xl shadow-lg mx-auto flex items-center justify-center mb-4">
+              <span className="text-3xl font-bold text-primary-700">MF</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white">MF Paris</h1>
+            <p className="text-primary-200 mt-2">CRM de Vendas</p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-2xl p-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 text-center">Entrar no sistema</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Usuário</label>
+                <input
+                  type="text"
+                  value={loginUsuario}
+                  onChange={(e) => setLoginUsuario(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  placeholder="Digite seu usuário"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                <input
+                  type="password"
+                  value={loginSenha}
+                  onChange={(e) => setLoginSenha(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  placeholder="Digite sua senha"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900"
+                />
+              </div>
+
+              {loginError && (
+                <div className="bg-red-50 border border-red-200 rounded-apple p-3 text-sm text-red-700 text-center">
+                  {loginError}
+                </div>
+              )}
+
+              <button
+                onClick={handleLogin}
+                className="w-full py-3 bg-primary-600 text-white rounded-apple hover:bg-primary-700 transition-colors duration-200 shadow-apple-sm font-semibold text-base"
+              >
+                Entrar
+              </button>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500 text-center">Acesso de demonstração:</p>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <button onClick={() => { setLoginUsuario('admin'); setLoginSenha('admin123') }} className="text-xs bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-apple px-2 py-1.5 text-gray-700 transition-colors">
+                  👑 admin / admin123
+                </button>
+                <button onClick={() => { setLoginUsuario('carlos'); setLoginSenha('carlos123') }} className="text-xs bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-apple px-2 py-1.5 text-gray-700 transition-colors">
+                  👤 carlos / carlos123
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-center text-primary-200 text-xs mt-6">© 2026 MF Paris — CRM de Vendas</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="h-screen flex bg-gray-50">
       {/* Sidebar - Apple style */}
@@ -891,14 +983,23 @@ function App() {
 
         {/* Bottom section */}
         <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-primary-700">CS</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                <span className="text-sm font-medium text-primary-700">{loggedUser.avatar}</span>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-900">{loggedUser.nome}</p>
+                <p className="text-xs text-gray-500">{loggedUser.cargo === 'gerente' ? 'Gerente' : loggedUser.cargo === 'sdr' ? 'SDR' : 'Vendedor'}</p>
+              </div>
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">Carlos Silva</p>
-              <p className="text-xs text-gray-500">Vendedor</p>
-            </div>
+            <button
+              onClick={() => setLoggedUser(null)}
+              className="text-xs text-gray-400 hover:text-red-600 transition-colors"
+              title="Sair"
+            >
+              Sair
+            </button>
           </div>
         </div>
       </div>
@@ -2656,11 +2757,16 @@ const VendedoresView: React.FC<{
   const [newMetaVendas, setNewMetaVendas] = React.useState('150000')
   const [newMetaLeads, setNewMetaLeads] = React.useState('10')
   const [newMetaConversao, setNewMetaConversao] = React.useState('15')
+  const [newUsuario, setNewUsuario] = React.useState('')
+  const [newSenha, setNewSenha] = React.useState('')
 
   const [editingMetas, setEditingMetas] = React.useState(false)
   const [editMetaVendas, setEditMetaVendas] = React.useState('')
   const [editMetaLeads, setEditMetaLeads] = React.useState('')
   const [editMetaConversao, setEditMetaConversao] = React.useState('')
+  const [editingCredentials, setEditingCredentials] = React.useState(false)
+  const [editUsuario, setEditUsuario] = React.useState('')
+  const [editSenha, setEditSenha] = React.useState('')
 
   const selectedVendedor = vendedores.find(v => v.id === selectedVendedorId) ?? null
 
@@ -2702,7 +2808,7 @@ const VendedoresView: React.FC<{
   }
 
   const handleAddVendedor = () => {
-    if (!newNome.trim() || !newEmail.trim()) return
+    if (!newNome.trim() || !newEmail.trim() || !newUsuario.trim() || !newSenha.trim()) return
     const initials = newNome.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
     onAddVendedor({
       id: Date.now(),
@@ -2711,12 +2817,24 @@ const VendedoresView: React.FC<{
       telefone: newTelefone.trim(),
       cargo: newCargo,
       avatar: initials,
+      usuario: newUsuario.trim(),
+      senha: newSenha.trim(),
       metaVendas: Number(newMetaVendas) || 150000,
       metaLeads: Number(newMetaLeads) || 10,
       metaConversao: Number(newMetaConversao) || 15,
       ativo: true
     })
-    setNewNome(''); setNewEmail(''); setNewTelefone(''); setShowModal(false)
+    setNewNome(''); setNewEmail(''); setNewTelefone(''); setNewUsuario(''); setNewSenha(''); setShowModal(false)
+  }
+
+  const handleSaveCredentials = () => {
+    if (!selectedVendedor || !editUsuario.trim() || !editSenha.trim()) return
+    onUpdateVendedor({
+      ...selectedVendedor,
+      usuario: editUsuario.trim(),
+      senha: editSenha.trim()
+    })
+    setEditingCredentials(false)
   }
 
   const handleSaveMetas = () => {
@@ -2768,6 +2886,43 @@ const VendedoresView: React.FC<{
               {selectedVendedor.ativo ? 'Desativar' : 'Ativar'}
             </button>
           </div>
+        </div>
+
+        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">🔐 Credenciais de Acesso</h3>
+            {!editingCredentials ? (
+              <button onClick={() => { setEditingCredentials(true); setEditUsuario(selectedVendedor.usuario); setEditSenha(selectedVendedor.senha) }} className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-apple hover:bg-gray-50 font-medium">✏️ Editar</button>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={() => setEditingCredentials(false)} className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-apple hover:bg-gray-50">Cancelar</button>
+                <button onClick={handleSaveCredentials} className="px-3 py-1.5 text-sm bg-primary-600 text-white rounded-apple hover:bg-primary-700">Salvar</button>
+              </div>
+            )}
+          </div>
+          {editingCredentials ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Usuário</label>
+                <input type="text" value={editUsuario} onChange={(e) => setEditUsuario(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                <input type="text" value={editSenha} onChange={(e) => setEditSenha(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-3 rounded-apple border border-gray-200 bg-gray-50">
+                <p className="text-xs text-gray-500">Usuário</p>
+                <p className="text-sm font-semibold text-gray-900 mt-1">{selectedVendedor.usuario}</p>
+              </div>
+              <div className="p-3 rounded-apple border border-gray-200 bg-gray-50">
+                <p className="text-xs text-gray-500">Senha</p>
+                <p className="text-sm font-semibold text-gray-900 mt-1">{'•'.repeat(selectedVendedor.senha.length)}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -2995,6 +3150,19 @@ const VendedoresView: React.FC<{
                 </select>
               </div>
               <div className="border-t border-gray-200 pt-4">
+                <p className="text-sm font-semibold text-gray-700 mb-3">🔐 Credenciais de Acesso</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Usuário *</label>
+                    <input value={newUsuario} onChange={(e) => setNewUsuario(e.target.value)} placeholder="nome.usuario" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Senha *</label>
+                    <input value={newSenha} onChange={(e) => setNewSenha(e.target.value)} placeholder="Senha de acesso" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
+                  </div>
+                </div>
+              </div>
+              <div className="border-t border-gray-200 pt-4">
                 <p className="text-sm font-semibold text-gray-700 mb-3">Metas Mensais</p>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
@@ -3014,7 +3182,7 @@ const VendedoresView: React.FC<{
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
               <button onClick={() => setShowModal(false)} className="px-4 py-2 bg-white border border-gray-300 rounded-apple hover:bg-gray-50">Cancelar</button>
-              <button onClick={handleAddVendedor} disabled={!newNome.trim() || !newEmail.trim()} className="px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 disabled:bg-gray-400 shadow-apple-sm">Cadastrar</button>
+              <button onClick={handleAddVendedor} disabled={!newNome.trim() || !newEmail.trim() || !newUsuario.trim() || !newSenha.trim()} className="px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 disabled:bg-gray-400 shadow-apple-sm">Cadastrar</button>
             </div>
           </div>
         </div>
