@@ -13,7 +13,7 @@ import {
   SparklesIcon
 } from '@heroicons/react/24/outline'
 
-type ViewType = 'dashboard' | 'funil' | 'clientes' | 'automacoes' | 'mapa' | 'prospeccao' | 'tarefas' | 'social' | 'integracoes'
+type ViewType = 'dashboard' | 'funil' | 'clientes' | 'automacoes' | 'mapa' | 'prospeccao' | 'tarefas' | 'social' | 'integracoes' | 'equipe'
 
 interface Cliente {
   id: number
@@ -25,6 +25,8 @@ interface Cliente {
   contatoEmail: string
   endereco?: string
   etapa: string
+  vendedorId?: number
+  motivoPerda?: string
   score?: number
   ultimaInteracao?: string
   diasInativo?: number
@@ -42,6 +44,7 @@ interface FormData {
   endereco: string
   valorEstimado?: string
   produtosInteresse: string
+  vendedorId?: string
 }
 
 interface Interacao {
@@ -145,6 +148,19 @@ interface Tarefa {
   clienteId?: number
 }
 
+interface Vendedor {
+  id: number
+  nome: string
+  email: string
+  telefone: string
+  cargo: 'vendedor' | 'gerente' | 'sdr'
+  avatar: string
+  metaVendas: number
+  metaLeads: number
+  metaConversao: number
+  ativo: boolean
+}
+
 interface FunilViewProps {
   clientes: Cliente[]
   onDragStart: (e: React.DragEvent, cliente: Cliente, fromStage: string) => void
@@ -154,6 +170,7 @@ interface FunilViewProps {
 
 interface ClientesViewProps {
   clientes: Cliente[]
+  vendedores: Vendedor[]
   onNewCliente: () => void
   onEditCliente: (cliente: Cliente) => void
 }
@@ -175,6 +192,7 @@ function App() {
       contatoEmail: 'joao@superbh.com.br',
       endereco: 'Av. Afonso Pena, 1000 - Centro, Belo Horizonte - MG',
       etapa: 'prospecção',
+      vendedorId: 1,
       score: 75,
       ultimaInteracao: '2024-01-15',
       diasInativo: 5,
@@ -190,6 +208,7 @@ function App() {
       contatoTelefone: '(31) 99999-2222',
       contatoEmail: 'maria@megamart.com.br',
       etapa: 'amostra',
+      vendedorId: 2,
       score: 85,
       ultimaInteracao: '2024-01-18',
       diasInativo: 2,
@@ -290,6 +309,13 @@ function App() {
       clienteId: 2
     }
   ])
+  const [vendedores, setVendedores] = useState<Vendedor[]>([
+    { id: 1, nome: 'Carlos Silva', email: 'carlos@mfparis.com.br', telefone: '(31) 99999-0001', cargo: 'vendedor', avatar: 'CS', metaVendas: 200000, metaLeads: 10, metaConversao: 20, ativo: true },
+    { id: 2, nome: 'Ana Oliveira', email: 'ana@mfparis.com.br', telefone: '(31) 99999-0002', cargo: 'vendedor', avatar: 'AO', metaVendas: 180000, metaLeads: 8, metaConversao: 18, ativo: true },
+    { id: 3, nome: 'Roberto Lima', email: 'roberto@mfparis.com.br', telefone: '(31) 99999-0003', cargo: 'sdr', avatar: 'RL', metaVendas: 120000, metaLeads: 15, metaConversao: 10, ativo: true },
+    { id: 4, nome: 'Fernanda Costa', email: 'fernanda@mfparis.com.br', telefone: '(31) 99999-0004', cargo: 'gerente', avatar: 'FC', metaVendas: 500000, metaLeads: 20, metaConversao: 15, ativo: true }
+  ])
+
   const [formData, setFormData] = useState<FormData>({
     razaoSocial: '',
     nomeFantasia: '',
@@ -299,7 +325,8 @@ function App() {
     contatoEmail: '',
     endereco: '',
     valorEstimado: '',
-    produtosInteresse: ''
+    produtosInteresse: '',
+    vendedorId: ''
   })
 
   // Dashboard Metrics Calculation
@@ -426,7 +453,7 @@ function App() {
     }, 1500)
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
@@ -440,13 +467,15 @@ function App() {
     const produtosArray = formData.produtosInteresse 
       ? formData.produtosInteresse.split(',').map(p => p.trim()).filter(p => p)
       : []
+    const { vendedorId: vIdStr, valorEstimado: vEstStr, produtosInteresse: _pi, ...restForm } = formData
     
     if (editingCliente) {
       // Edit existing cliente
       const updatedCliente: Cliente = {
         ...editingCliente,
-        ...formData,
-        valorEstimado: formData.valorEstimado ? parseFloat(formData.valorEstimado) : undefined,
+        ...restForm,
+        valorEstimado: vEstStr ? parseFloat(vEstStr) : undefined,
+        vendedorId: vIdStr ? Number(vIdStr) : undefined,
         produtosInteresse: produtosArray
       }
       updatedCliente.score = calculateLeadScore(updatedCliente)
@@ -474,9 +503,10 @@ function App() {
       // Add new cliente
       const newCliente: Cliente = {
         id: clientes.length + 1,
-        ...formData,
+        ...restForm,
         etapa: 'prospecção',
-        valorEstimado: formData.valorEstimado ? parseFloat(formData.valorEstimado) : undefined,
+        valorEstimado: vEstStr ? parseFloat(vEstStr) : undefined,
+        vendedorId: vIdStr ? Number(vIdStr) : undefined,
         produtosInteresse: produtosArray,
         ultimaInteracao: new Date().toISOString().split('T')[0],
         diasInativo: 0
@@ -507,7 +537,8 @@ function App() {
       contatoEmail: '',
       endereco: '',
       valorEstimado: '',
-      produtosInteresse: ''
+      produtosInteresse: '',
+      vendedorId: ''
     })
     setShowModal(false)
   }
@@ -523,7 +554,8 @@ function App() {
       contatoEmail: cliente.contatoEmail,
       endereco: cliente.endereco || '',
       valorEstimado: cliente.valorEstimado?.toString() || '',
-      produtosInteresse: cliente.produtosInteresse?.join(', ') || ''
+      produtosInteresse: cliente.produtosInteresse?.join(', ') || '',
+      vendedorId: cliente.vendedorId?.toString() || ''
     })
     setShowModal(true)
   }
@@ -635,7 +667,8 @@ function App() {
       contatoEmail: '',
       endereco: '',
       valorEstimado: '',
-      produtosInteresse: ''
+      produtosInteresse: '',
+      vendedorId: ''
     })
     setShowModal(true)
   }
@@ -655,6 +688,7 @@ function App() {
       case 'clientes':
         return <ClientesView 
           clientes={clientes} 
+          vendedores={vendedores}
           onNewCliente={openModal}
           onEditCliente={handleEditCliente}
         />
@@ -684,6 +718,8 @@ function App() {
         return <SocialSearchView />
       case 'integracoes':
         return <IntegracoesView />
+      case 'equipe':
+        return <VendedoresView vendedores={vendedores} clientes={clientes} onAddVendedor={(v) => setVendedores(prev => [...prev, v])} onUpdateVendedor={(v) => setVendedores(prev => prev.map(x => x.id === v.id ? v : x))} />
       default:
         return <DashboardView clientes={clientes} metrics={dashboardMetrics} />
     }
@@ -826,6 +862,20 @@ function App() {
             Integrações
           </button>
 
+          <button
+            onClick={() => setActiveView('equipe')}
+            className={`
+              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
+              ${activeView === 'equipe'
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }
+            `}
+          >
+            <UserGroupIcon className="mr-3 h-5 w-5" />
+            Equipe
+          </button>
+
           <div className="border-t border-gray-200 pt-4 mt-4">
             <button
               onClick={() => setShowAIModal(true)}
@@ -867,6 +917,7 @@ function App() {
             {activeView === 'tarefas' && 'Tarefas e Agenda'}
             {activeView === 'social' && 'Busca por Redes Sociais'}
             {activeView === 'integracoes' && 'Integrações'}
+            {activeView === 'equipe' && 'Equipe de Vendas'}
           </h2>
           
           <div className="flex items-center space-x-4">
@@ -1039,6 +1090,23 @@ function App() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="congelados, laticínios, bebidas, limpeza"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Vendedor Responsável
+                    </label>
+                    <select
+                      name="vendedorId"
+                      value={formData.vendedorId || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                      <option value="">Sem vendedor</option>
+                      {vendedores.filter(v => v.ativo).map(v => (
+                        <option key={v.id} value={v.id}>{v.nome} ({v.cargo === 'gerente' ? 'Gerente' : v.cargo === 'sdr' ? 'SDR' : 'Vendedor'})</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -1404,11 +1472,12 @@ const FunilView: React.FC<FunilViewProps> = ({ clientes, onDragStart, onDragOver
     { title: 'Amostra', key: 'amostra', color: 'yellow' },
     { title: 'Homologado', key: 'homologado', color: 'green' },
     { title: 'Negociação', key: 'negociacao', color: 'purple' },
-    { title: 'Pós-Venda', key: 'pos_venda', color: 'pink' }
+    { title: 'Pós-Venda', key: 'pos_venda', color: 'pink' },
+    { title: 'Perdido', key: 'perdido', color: 'red' }
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
       {stages.map((stage) => (
         <div 
           key={stage.title} 
@@ -1451,7 +1520,7 @@ const FunilView: React.FC<FunilViewProps> = ({ clientes, onDragStart, onDragOver
 }
 
 // Clientes View
-const ClientesView: React.FC<ClientesViewProps> = ({ clientes, onNewCliente, onEditCliente }) => {
+const ClientesView: React.FC<ClientesViewProps> = ({ clientes, vendedores, onNewCliente, onEditCliente }) => {
   const [searchTerm, setSearchTerm] = React.useState('')
   
   const filteredClientes = clientes.filter(cliente =>
@@ -1466,6 +1535,8 @@ const ClientesView: React.FC<ClientesViewProps> = ({ clientes, onNewCliente, onE
       case 'amostra': return 'bg-yellow-100 text-yellow-800'
       case 'homologado': return 'bg-green-100 text-green-800'
       case 'negociacao': return 'bg-purple-100 text-purple-800'
+      case 'pos_venda': return 'bg-pink-100 text-pink-800'
+      case 'perdido': return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -1536,6 +1607,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({ clientes, onNewCliente, onE
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Cliente</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Contato</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Etapa</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Vendedor</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Score</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Ações</th>
               </tr>
@@ -1559,6 +1631,19 @@ const ClientesView: React.FC<ClientesViewProps> = ({ clientes, onNewCliente, onE
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${getEtapaColor(cliente.etapa)}`}>
                       {cliente.etapa.charAt(0).toUpperCase() + cliente.etapa.slice(1)}
                     </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    {(() => {
+                      const v = vendedores.find(v => v.id === cliente.vendedorId)
+                      return v ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-bold text-primary-700">{v.avatar}</span>
+                          </div>
+                          <span className="text-sm text-gray-900">{v.nome}</span>
+                        </div>
+                      ) : <span className="text-xs text-gray-400">—</span>
+                    })()}
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center">
@@ -2552,6 +2637,388 @@ const IntegracoesView: React.FC = () => {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+const VendedoresView: React.FC<{
+  vendedores: Vendedor[]
+  clientes: Cliente[]
+  onAddVendedor: (v: Vendedor) => void
+  onUpdateVendedor: (v: Vendedor) => void
+}> = ({ vendedores, clientes, onAddVendedor, onUpdateVendedor }) => {
+  const [selectedVendedorId, setSelectedVendedorId] = React.useState<number | null>(null)
+  const [showModal, setShowModal] = React.useState(false)
+  const [newNome, setNewNome] = React.useState('')
+  const [newEmail, setNewEmail] = React.useState('')
+  const [newTelefone, setNewTelefone] = React.useState('')
+  const [newCargo, setNewCargo] = React.useState<Vendedor['cargo']>('vendedor')
+  const [newMetaVendas, setNewMetaVendas] = React.useState('150000')
+  const [newMetaLeads, setNewMetaLeads] = React.useState('10')
+  const [newMetaConversao, setNewMetaConversao] = React.useState('15')
+
+  const [editingMetas, setEditingMetas] = React.useState(false)
+  const [editMetaVendas, setEditMetaVendas] = React.useState('')
+  const [editMetaLeads, setEditMetaLeads] = React.useState('')
+  const [editMetaConversao, setEditMetaConversao] = React.useState('')
+
+  const selectedVendedor = vendedores.find(v => v.id === selectedVendedorId) ?? null
+
+  const getVendedorMetrics = (vendedor: Vendedor) => {
+    const clientesVendedor = clientes.filter(c => c.vendedorId === vendedor.id)
+    const totalLeads = clientesVendedor.length
+    const valorPipeline = clientesVendedor.reduce((sum, c) => sum + (c.valorEstimado || 0), 0)
+    const conversoes = clientesVendedor.filter(c => c.etapa === 'pos_venda').length
+    const taxaConversao = totalLeads > 0 ? (conversoes / totalLeads) * 100 : 0
+    return { totalLeads, valorPipeline, conversoes, taxaConversao, clientesVendedor }
+  }
+
+  const ranking = [...vendedores]
+    .filter(v => v.ativo)
+    .map(v => ({ ...v, metrics: getVendedorMetrics(v) }))
+    .sort((a, b) => b.metrics.valorPipeline - a.metrics.valorPipeline)
+
+  const getCargoLabel = (cargo: Vendedor['cargo']) => {
+    switch (cargo) {
+      case 'gerente': return 'Gerente'
+      case 'sdr': return 'SDR'
+      default: return 'Vendedor'
+    }
+  }
+
+  const getCargoBadge = (cargo: Vendedor['cargo']) => {
+    switch (cargo) {
+      case 'gerente': return 'bg-purple-100 text-purple-800'
+      case 'sdr': return 'bg-blue-100 text-blue-800'
+      default: return 'bg-green-100 text-green-800'
+    }
+  }
+
+  const getBarColor = (pct: number) => {
+    if (pct >= 100) return 'bg-green-500'
+    if (pct >= 75) return 'bg-blue-500'
+    if (pct >= 50) return 'bg-yellow-500'
+    return 'bg-red-500'
+  }
+
+  const handleAddVendedor = () => {
+    if (!newNome.trim() || !newEmail.trim()) return
+    const initials = newNome.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+    onAddVendedor({
+      id: Date.now(),
+      nome: newNome.trim(),
+      email: newEmail.trim(),
+      telefone: newTelefone.trim(),
+      cargo: newCargo,
+      avatar: initials,
+      metaVendas: Number(newMetaVendas) || 150000,
+      metaLeads: Number(newMetaLeads) || 10,
+      metaConversao: Number(newMetaConversao) || 15,
+      ativo: true
+    })
+    setNewNome(''); setNewEmail(''); setNewTelefone(''); setShowModal(false)
+  }
+
+  const handleSaveMetas = () => {
+    if (!selectedVendedor) return
+    onUpdateVendedor({
+      ...selectedVendedor,
+      metaVendas: Number(editMetaVendas) || selectedVendedor.metaVendas,
+      metaLeads: Number(editMetaLeads) || selectedVendedor.metaLeads,
+      metaConversao: Number(editMetaConversao) || selectedVendedor.metaConversao
+    })
+    setEditingMetas(false)
+  }
+
+  if (selectedVendedor) {
+    const m = getVendedorMetrics(selectedVendedor)
+    const pctVendas = Math.min((m.valorPipeline / selectedVendedor.metaVendas) * 100, 100)
+    const pctLeads = Math.min((m.totalLeads / selectedVendedor.metaLeads) * 100, 100)
+    const pctConversao = Math.min((m.taxaConversao / selectedVendedor.metaConversao) * 100, 100)
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setSelectedVendedorId(null)} className="px-3 py-2 bg-white border border-gray-300 rounded-apple hover:bg-gray-50 text-sm font-medium text-gray-700">← Voltar</button>
+          <h1 className="text-2xl font-semibold text-gray-900">Perfil do Vendedor</h1>
+        </div>
+
+        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl font-bold text-primary-700">{selectedVendedor.avatar}</span>
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-gray-900">{selectedVendedor.nome}</h2>
+              <div className="flex items-center gap-3 mt-1">
+                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getCargoBadge(selectedVendedor.cargo)}`}>{getCargoLabel(selectedVendedor.cargo)}</span>
+                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${selectedVendedor.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{selectedVendedor.ativo ? 'Ativo' : 'Inativo'}</span>
+              </div>
+              <div className="flex gap-6 mt-3 text-sm text-gray-600">
+                <span>📧 {selectedVendedor.email}</span>
+                <span>📞 {selectedVendedor.telefone}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                onUpdateVendedor({ ...selectedVendedor, ativo: !selectedVendedor.ativo })
+              }}
+              className={`px-4 py-2 rounded-apple text-sm font-semibold ${selectedVendedor.ativo ? 'bg-red-50 text-red-700 border-2 border-red-200 hover:bg-red-100' : 'bg-green-600 text-white hover:bg-green-700'}`}
+            >
+              {selectedVendedor.ativo ? 'Desativar' : 'Ativar'}
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-4">
+            <p className="text-sm text-gray-600">Clientes</p>
+            <p className="text-2xl font-bold text-gray-900">{m.totalLeads}</p>
+          </div>
+          <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-4">
+            <p className="text-sm text-gray-600">Pipeline</p>
+            <p className="text-2xl font-bold text-gray-900">R$ {m.valorPipeline.toLocaleString('pt-BR')}</p>
+          </div>
+          <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-4">
+            <p className="text-sm text-gray-600">Conversões</p>
+            <p className="text-2xl font-bold text-green-600">{m.conversoes}</p>
+          </div>
+          <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-4">
+            <p className="text-sm text-gray-600">Taxa Conversão</p>
+            <p className="text-2xl font-bold text-purple-600">{m.taxaConversao.toFixed(1)}%</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">🎯 Metas Individuais</h3>
+            {!editingMetas ? (
+              <button onClick={() => { setEditingMetas(true); setEditMetaVendas(String(selectedVendedor.metaVendas)); setEditMetaLeads(String(selectedVendedor.metaLeads)); setEditMetaConversao(String(selectedVendedor.metaConversao)) }} className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-apple hover:bg-gray-50 font-medium">✏️ Editar Metas</button>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={() => setEditingMetas(false)} className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-apple hover:bg-gray-50">Cancelar</button>
+                <button onClick={handleSaveMetas} className="px-3 py-1.5 text-sm bg-primary-600 text-white rounded-apple hover:bg-primary-700">Salvar</button>
+              </div>
+            )}
+          </div>
+
+          {editingMetas ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Meta Vendas (R$)</label>
+                <input type="number" value={editMetaVendas} onChange={(e) => setEditMetaVendas(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Meta Leads</label>
+                <input type="number" value={editMetaLeads} onChange={(e) => setEditMetaLeads(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Meta Conversão (%)</label>
+                <input type="number" value={editMetaConversao} onChange={(e) => setEditMetaConversao(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-apple border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-600">💰 Vendas</p>
+                  <p className="text-sm font-bold text-gray-900">R$ {m.valorPipeline.toLocaleString('pt-BR')} / {selectedVendedor.metaVendas.toLocaleString('pt-BR')}</p>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                  <div className={`h-3 rounded-full transition-all duration-500 ${getBarColor(pctVendas)}`} style={{ width: `${pctVendas}%` }}></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{pctVendas.toFixed(0)}% da meta</p>
+              </div>
+              <div className="p-4 rounded-apple border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-600">📋 Leads</p>
+                  <p className="text-sm font-bold text-gray-900">{m.totalLeads} / {selectedVendedor.metaLeads}</p>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                  <div className={`h-3 rounded-full transition-all duration-500 ${getBarColor(pctLeads)}`} style={{ width: `${pctLeads}%` }}></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{pctLeads.toFixed(0)}% da meta</p>
+              </div>
+              <div className="p-4 rounded-apple border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-600">🔄 Conversão</p>
+                  <p className="text-sm font-bold text-gray-900">{m.taxaConversao.toFixed(1)}% / {selectedVendedor.metaConversao}%</p>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                  <div className={`h-3 rounded-full transition-all duration-500 ${getBarColor(pctConversao)}`} style={{ width: `${pctConversao}%` }}></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{pctConversao.toFixed(0)}% da meta</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Clientes Atribuídos ({m.clientesVendedor.length})</h3>
+          </div>
+          <div className="p-6">
+            {m.clientesVendedor.length === 0 ? (
+              <p className="text-gray-500 text-sm">Nenhum cliente atribuído a este vendedor.</p>
+            ) : (
+              <div className="space-y-2">
+                {m.clientesVendedor.map(c => (
+                  <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-apple border border-gray-200">
+                    <div>
+                      <p className="font-medium text-sm text-gray-900">{c.razaoSocial}</p>
+                      <p className="text-xs text-gray-500">{c.contatoNome} • {c.etapa}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-gray-900">R$ {(c.valorEstimado || 0).toLocaleString('pt-BR')}</p>
+                      <p className="text-xs text-gray-500">Score: {c.score || 0}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Equipe de Vendas</h1>
+          <p className="mt-1 text-sm text-gray-600">Gerencie sua equipe, acompanhe metas e performance individual</p>
+        </div>
+        <button onClick={() => setShowModal(true)} className="px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 shadow-apple-sm flex items-center">
+          <PlusIcon className="h-4 w-4 mr-2" />
+          Novo Vendedor
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {vendedores.map(v => {
+          const m = getVendedorMetrics(v)
+          const pctVendas = Math.min((m.valorPipeline / v.metaVendas) * 100, 100)
+          return (
+            <div key={v.id} onClick={() => setSelectedVendedorId(v.id)} className="bg-white rounded-apple shadow-apple-sm border-2 border-gray-200 p-6 hover:border-primary-300 transition-all cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${v.ativo ? 'bg-primary-100' : 'bg-gray-200'}`}>
+                  <span className={`text-sm font-bold ${v.ativo ? 'text-primary-700' : 'text-gray-500'}`}>{v.avatar}</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">{v.nome}</h3>
+                  <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getCargoBadge(v.cargo)}`}>{getCargoLabel(v.cargo)}</span>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Clientes</span>
+                  <span className="font-semibold text-gray-900">{m.totalLeads}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Pipeline</span>
+                  <span className="font-semibold text-gray-900">R$ {m.valorPipeline.toLocaleString('pt-BR')}</span>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-500">Meta vendas</span>
+                    <span className="font-semibold text-gray-700">{pctVendas.toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div className={`h-2 rounded-full ${getBarColor(pctVendas)}`} style={{ width: `${pctVendas}%` }}></div>
+                  </div>
+                </div>
+              </div>
+              {!v.ativo && <p className="text-xs text-red-500 mt-2 font-semibold">Inativo</p>}
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">🏆 Ranking da Equipe</h3>
+        </div>
+        <div className="p-6">
+          <div className="space-y-3">
+            {ranking.map((v, index) => {
+              const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}º`
+              return (
+                <div key={v.id} className={`flex items-center gap-4 p-4 rounded-apple border-2 transition-all ${index === 0 ? 'bg-yellow-50 border-yellow-200' : index === 1 ? 'bg-gray-50 border-gray-300' : index === 2 ? 'bg-orange-50 border-orange-200' : 'bg-white border-gray-200'}`}>
+                  <div className="text-2xl w-10 text-center font-bold">{medal}</div>
+                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-bold text-primary-700">{v.avatar}</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900">{v.nome}</p>
+                    <p className="text-xs text-gray-500">{getCargoLabel(v.cargo)} • {v.metrics.totalLeads} clientes</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-gray-900">R$ {v.metrics.valorPipeline.toLocaleString('pt-BR')}</p>
+                    <p className="text-xs text-gray-500">Conversão: {v.metrics.taxaConversao.toFixed(1)}%</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-apple shadow-apple-lg max-w-lg w-full p-6">
+            <div className="flex items-start justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Novo Vendedor</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><XMarkIcon className="h-6 w-6" /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+                <input value={newNome} onChange={(e) => setNewNome(e.target.value)} placeholder="Nome completo" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="email@empresa.com" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                  <input value={newTelefone} onChange={(e) => setNewTelefone(e.target.value)} placeholder="(00) 00000-0000" className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cargo</label>
+                <select value={newCargo} onChange={(e) => setNewCargo(e.target.value as Vendedor['cargo'])} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500">
+                  <option value="vendedor">Vendedor</option>
+                  <option value="sdr">SDR</option>
+                  <option value="gerente">Gerente</option>
+                </select>
+              </div>
+              <div className="border-t border-gray-200 pt-4">
+                <p className="text-sm font-semibold text-gray-700 mb-3">Metas Mensais</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Vendas (R$)</label>
+                    <input type="number" value={newMetaVendas} onChange={(e) => setNewMetaVendas(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Leads</label>
+                    <input type="number" value={newMetaLeads} onChange={(e) => setNewMetaLeads(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Conversão (%)</label>
+                    <input type="number" value={newMetaConversao} onChange={(e) => setNewMetaConversao(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 bg-white border border-gray-300 rounded-apple hover:bg-gray-50">Cancelar</button>
+              <button onClick={handleAddVendedor} disabled={!newNome.trim() || !newEmail.trim()} className="px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 disabled:bg-gray-400 shadow-apple-sm">Cadastrar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
