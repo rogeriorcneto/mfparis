@@ -17,11 +17,12 @@ import {
   AdjustmentsHorizontalIcon,
   DocumentTextIcon,
   CubeIcon,
-  PhotoIcon
+  PhotoIcon,
+  ShoppingCartIcon
 } from '@heroicons/react/24/outline'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from 'recharts'
 
-type ViewType = 'dashboard' | 'funil' | 'clientes' | 'automacoes' | 'mapa' | 'prospeccao' | 'tarefas' | 'social' | 'integracoes' | 'equipe' | 'relatorios' | 'templates' | 'produtos'
+type ViewType = 'dashboard' | 'funil' | 'clientes' | 'automacoes' | 'mapa' | 'prospeccao' | 'tarefas' | 'social' | 'integracoes' | 'equipe' | 'relatorios' | 'templates' | 'produtos' | 'pedidos'
 
 interface Cliente {
   id: number
@@ -209,6 +210,28 @@ interface Vendedor {
   ativo: boolean
 }
 
+interface ItemPedido {
+  produtoId: number
+  nomeProduto: string
+  sku?: string
+  unidade: string
+  preco: number
+  quantidade: number
+}
+
+interface Pedido {
+  id: number
+  numero: string
+  clienteId: number
+  vendedorId: number
+  itens: ItemPedido[]
+  observacoes: string
+  status: 'rascunho' | 'enviado' | 'confirmado' | 'cancelado'
+  dataCriacao: string
+  dataEnvio?: string
+  totalValor: number
+}
+
 interface FunilViewProps {
   clientes: Cliente[]
   onDragStart: (e: React.DragEvent, cliente: Cliente, fromStage: string) => void
@@ -240,12 +263,12 @@ function App() {
     { id: 5, tipo: 'editou', descricao: 'Dados atualizados: Atacadão MG', vendedorNome: 'Fernanda Costa', timestamp: new Date(Date.now() - 18000000).toISOString() },
   ])
   const [templates, setTemplates] = useState<Template[]>([
-    { id: 1, nome: 'Primeiro Contato', canal: 'email', etapa: 'prospecção', assunto: 'Apresentação MF Paris — Soluções para seu negócio', corpo: 'Olá {nome},\n\nSou {vendedor} da MF Paris. Gostaria de apresentar nossas soluções em congelados, laticínios e bebidas para {empresa}.\n\nPodemos agendar uma conversa?\n\nAtt,\n{vendedor}' },
+    { id: 1, nome: 'Primeiro Contato', canal: 'email', etapa: 'prospecção', assunto: 'Apresentação MF Paris — Soluções para seu negócio', corpo: 'Olá {nome},\n\nSou {vendedor} da MF Paris. Gostaria de apresentar nossas soluções em lácteos, compostos e café para {empresa}.\n\nPodemos agendar uma conversa?\n\nAtt,\n{vendedor}' },
     { id: 2, nome: 'Envio de Amostra', canal: 'email', etapa: 'amostra', assunto: 'Confirmação de envio de amostras — MF Paris', corpo: 'Olá {nome},\n\nConfirmamos o envio das amostras solicitadas para {empresa}. Prazo estimado: 3 dias úteis.\n\nQualquer dúvida, estou à disposição.\n\nAtt,\n{vendedor}' },
     { id: 3, nome: 'Follow-up Homologação', canal: 'email', etapa: 'homologado', assunto: 'Como foi a avaliação? — MF Paris', corpo: 'Olá {nome},\n\nGostaria de saber como foi a avaliação dos nossos produtos em {empresa}. Podemos agendar uma reunião para discutir os próximos passos?\n\nAtt,\n{vendedor}' },
     { id: 4, nome: 'Proposta Comercial', canal: 'email', etapa: 'negociacao', assunto: 'Proposta Comercial — MF Paris para {empresa}', corpo: 'Olá {nome},\n\nSegue em anexo nossa proposta comercial personalizada para {empresa}.\n\nCondições especiais válidas até o final do mês.\n\nAtt,\n{vendedor}' },
     { id: 5, nome: 'Boas-vindas Pós-Venda', canal: 'email', etapa: 'pos_venda', assunto: 'Bem-vindo à MF Paris! 🎉', corpo: 'Olá {nome},\n\nÉ com grande satisfação que damos boas-vindas a {empresa} como nosso novo parceiro!\n\nSeu gerente de conta é {vendedor}. Qualquer necessidade, conte conosco.\n\nAtt,\nEquipe MF Paris' },
-    { id: 6, nome: 'Primeiro Contato WhatsApp', canal: 'whatsapp', etapa: 'prospecção', corpo: 'Olá {nome}! 👋\nSou {vendedor} da *MF Paris*. Temos soluções em congelados, laticínios e bebidas para {empresa}.\nPosso enviar nosso catálogo? 📋' },
+    { id: 6, nome: 'Primeiro Contato WhatsApp', canal: 'whatsapp', etapa: 'prospecção', corpo: 'Olá {nome}! 👋\nSou {vendedor} da *MF Paris*. Temos soluções em lácteos, compostos e café para {empresa}.\nPosso enviar nosso catálogo? 📋' },
     { id: 7, nome: 'Lembrete de Amostra', canal: 'whatsapp', etapa: 'amostra', corpo: 'Olá {nome}! 📦\nAs amostras da *MF Paris* já foram enviadas para {empresa}. Previsão de chegada: 3 dias úteis.\nQualquer dúvida, estou aqui! 😊' },
     { id: 8, nome: 'Follow-up WhatsApp', canal: 'whatsapp', etapa: 'negociacao', corpo: 'Olá {nome}! 🤝\nComo está a análise da nossa proposta para {empresa}?\nTemos condições especiais este mês. Posso ajudar em algo? 💬' },
   ])
@@ -320,7 +343,7 @@ function App() {
       tipo: 'email',
       data: '2024-01-15T10:30:00',
       assunto: 'Proposta inicial',
-      descricao: 'Envio de catálogo de produtos congelados',
+      descricao: 'Envio de catálogo de produtos MF Paris',
       automatico: false
     }
   ])
@@ -379,6 +402,7 @@ function App() {
   ])
 
   const [jobs, setJobs] = useState<JobAutomacao[]>([])
+  const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [tarefas, setTarefas] = useState<Tarefa[]>([
     {
       id: 1,
@@ -816,6 +840,12 @@ function App() {
     setShowModal(true)
   }
 
+  const viewsPermitidas: Record<Vendedor['cargo'], ViewType[]> = {
+    gerente: ['dashboard', 'funil', 'clientes', 'automacoes', 'mapa', 'prospeccao', 'tarefas', 'social', 'integracoes', 'equipe', 'relatorios', 'templates', 'produtos', 'pedidos'],
+    vendedor: ['funil', 'clientes', 'mapa', 'tarefas', 'produtos', 'templates', 'pedidos'],
+    sdr: ['funil', 'clientes', 'mapa', 'prospeccao', 'tarefas', 'templates', 'pedidos'],
+  }
+
   const renderContent = () => {
     const dashboardMetrics = calculateDashboardMetrics()
     switch (activeView) {
@@ -869,6 +899,8 @@ function App() {
         return <TemplatesView templates={templates} onAdd={(t) => setTemplates(prev => [...prev, t])} onDelete={(id) => setTemplates(prev => prev.filter(t => t.id !== id))} />
       case 'produtos':
         return <ProdutosView produtos={produtos} onAdd={(p) => setProdutos(prev => [...prev, p])} onUpdate={(p) => setProdutos(prev => prev.map(x => x.id === p.id ? p : x))} onDelete={(id) => setProdutos(prev => prev.filter(p => p.id !== id))} isGerente={loggedUser?.cargo === 'gerente'} />
+      case 'pedidos':
+        return <PedidosView pedidos={pedidos} clientes={clientes} produtos={produtos} vendedores={vendedores} loggedUser={loggedUser!} onAddPedido={(p) => setPedidos(prev => [...prev, p])} onUpdatePedido={(p) => setPedidos(prev => prev.map(x => x.id === p.id ? p : x))} />
       default:
         return <DashboardView clientes={clientes} metrics={dashboardMetrics} vendedores={vendedores} atividades={atividades} interacoes={interacoes} produtos={produtos} />
     }
@@ -879,6 +911,7 @@ function App() {
     const user = vendedores.find(v => v.usuario === loginUsuario.trim() && v.senha === loginSenha && v.ativo)
     if (user) {
       setLoggedUser(user)
+      setActiveView(viewsPermitidas[user.cargo][0])
       setLoginUsuario('')
       setLoginSenha('')
     } else {
@@ -908,7 +941,7 @@ function App() {
                   type="text"
                   value={loginUsuario}
                   onChange={(e) => setLoginUsuario(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                   placeholder="Digite seu usuário"
                   className="w-full px-4 py-3 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900"
                   autoFocus
@@ -920,7 +953,7 @@ function App() {
                   type="password"
                   value={loginSenha}
                   onChange={(e) => setLoginSenha(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                   placeholder="Digite sua senha"
                   className="w-full px-4 py-3 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900"
                 />
@@ -941,14 +974,28 @@ function App() {
             </div>
 
             <div className="mt-6 pt-4 border-t border-gray-200">
-              <p className="text-xs text-gray-500 text-center">Acesso de demonstração:</p>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <button onClick={() => { setLoginUsuario('admin'); setLoginSenha('admin123') }} className="text-xs bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-apple px-2 py-1.5 text-gray-700 transition-colors">
-                  👑 admin / admin123
-                </button>
-                <button onClick={() => { setLoginUsuario('carlos'); setLoginSenha('carlos123') }} className="text-xs bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-apple px-2 py-1.5 text-gray-700 transition-colors">
-                  👤 carlos / carlos123
-                </button>
+              <p className="text-xs text-gray-500 text-center mb-2">Acesso de demonstração:</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded-apple">
+                  <span className="text-sm">👑</span>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-amber-800">Gerente — acesso total</p>
+                    <p className="text-xs text-amber-600">admin / admin123</p>
+                  </div>
+                  <button onClick={() => { setLoginUsuario('admin'); setLoginSenha('admin123') }} className="text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-apple px-2 py-1 transition-colors font-medium">
+                    Usar
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-apple">
+                  <span className="text-sm">👤</span>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-blue-800">Vendedor — acesso restrito</p>
+                    <p className="text-xs text-blue-600">carlos / carlos123</p>
+                  </div>
+                  <button onClick={() => { setLoginUsuario('carlos'); setLoginSenha('carlos123') }} className="text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-apple px-2 py-1 transition-colors font-medium">
+                    Usar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -969,200 +1016,63 @@ function App() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-1">
-          <button
-            onClick={() => setActiveView('dashboard')}
-            className={`
-              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
-              ${activeView === 'dashboard' 
-                ? 'bg-primary-50 text-primary-700' 
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }
-            `}
-          >
-            <HomeIcon className="mr-3 h-5 w-5" />
-            Visão Geral
-          </button>
-          
-          <button
-            onClick={() => setActiveView('funil')}
-            className={`
-              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
-              ${activeView === 'funil' 
-                ? 'bg-primary-50 text-primary-700' 
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }
-            `}
-          >
-            <FunnelIcon className="mr-3 h-5 w-5" />
-            Funil
-          </button>
-          
-          <button
-            onClick={() => setActiveView('clientes')}
-            className={`
-              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
-              ${activeView === 'clientes' 
-                ? 'bg-primary-50 text-primary-700' 
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }
-            `}
-          >
-            <UserGroupIcon className="mr-3 h-5 w-5" />
-            Clientes
-          </button>
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+          {([
+            { id: 'dashboard', icon: HomeIcon, label: 'Visão Geral' },
+            { id: 'funil', icon: FunnelIcon, label: 'Funil' },
+            { id: 'clientes', icon: UserGroupIcon, label: 'Clientes' },
+            { id: 'pedidos', icon: ShoppingCartIcon, label: 'Pedidos' },
+            { id: 'tarefas', icon: ChartBarIcon, label: 'Tarefas' },
+            { id: 'mapa', icon: MapIcon, label: 'Mapa' },
+            { id: 'produtos', icon: CubeIcon, label: 'Produtos' },
+            { id: 'templates', icon: DocumentTextIcon, label: 'Templates' },
+            { id: 'automacoes', icon: PaperAirplaneIcon, label: 'Automações' },
+            { id: 'prospeccao', icon: MagnifyingGlassIcon, label: 'Prospecção' },
+            { id: 'social', icon: MagnifyingGlassIcon, label: 'Busca Social' },
+            { id: 'integracoes', icon: SparklesIcon, label: 'Integrações' },
+            { id: 'equipe', icon: UserGroupIcon, label: 'Equipe' },
+            { id: 'relatorios', icon: ChartBarIcon, label: 'Relatórios' },
+          ] as { id: ViewType; icon: React.ElementType; label: string }[])
+            .filter(item => viewsPermitidas[loggedUser.cargo].includes(item.id))
+            .map(item => (
+              <button
+                key={item.id}
+                onClick={() => setActiveView(item.id)}
+                className={`
+                  w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
+                  ${activeView === item.id
+                    ? 'bg-primary-50 text-primary-700'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }
+                `}
+              >
+                <item.icon className="mr-3 h-5 w-5" />
+                {item.label}
+              </button>
+            ))}
 
-	      <button
-	        onClick={() => setActiveView('automacoes')}
-	        className={`
-	          w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
-	          ${activeView === 'automacoes'
-	            ? 'bg-primary-50 text-primary-700'
-	            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-	          }
-	        `}
-	      >
-	        <PaperAirplaneIcon className="mr-3 h-5 w-5" />
-	        Automações
-	      </button>
-
-	      <button
-	        onClick={() => setActiveView('prospeccao')}
-	        className={`
-	          w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
-	          ${activeView === 'prospeccao'
-	            ? 'bg-primary-50 text-primary-700'
-	            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-	          }
-	        `}
-	      >
-	        <MagnifyingGlassIcon className="mr-3 h-5 w-5" />
-	        Prospecção
-	      </button>
-
-	      <button
-	        onClick={() => setActiveView('mapa')}
-	        className={`
-	          w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
-	          ${activeView === 'mapa'
-	            ? 'bg-primary-50 text-primary-700'
-	            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-	          }
-	        `}
-	      >
-	        <MapIcon className="mr-3 h-5 w-5" />
-	        Mapa
-	      </button>
-
-          <button
-            onClick={() => setActiveView('tarefas')}
-            className={`
-              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
-              ${activeView === 'tarefas'
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }
-            `}
-          >
-            <ChartBarIcon className="mr-3 h-5 w-5" />
-            Tarefas
-          </button>
-
-          <button
-            onClick={() => setActiveView('social')}
-            className={`
-              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
-              ${activeView === 'social'
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }
-            `}
-          >
-            <MagnifyingGlassIcon className="mr-3 h-5 w-5" />
-            Busca Social
-          </button>
-
-          <button
-            onClick={() => setActiveView('integracoes')}
-            className={`
-              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
-              ${activeView === 'integracoes'
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }
-            `}
-          >
-            <SparklesIcon className="mr-3 h-5 w-5" />
-            Integrações
-          </button>
-
-          <button
-            onClick={() => setActiveView('equipe')}
-            className={`
-              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
-              ${activeView === 'equipe'
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }
-            `}
-          >
-            <UserGroupIcon className="mr-3 h-5 w-5" />
-            Equipe
-          </button>
-
-          <button
-            onClick={() => setActiveView('produtos')}
-            className={`
-              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
-              ${activeView === 'produtos'
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }
-            `}
-          >
-            <CubeIcon className="mr-3 h-5 w-5" />
-            Produtos
-          </button>
-
-          <button
-            onClick={() => setActiveView('relatorios')}
-            className={`
-              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
-              ${activeView === 'relatorios'
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }
-            `}
-          >
-            <ChartBarIcon className="mr-3 h-5 w-5" />
-            Relatórios
-          </button>
-
-          <button
-            onClick={() => setActiveView('templates')}
-            className={`
-              w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple transition-all duration-200
-              ${activeView === 'templates'
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }
-            `}
-          >
-            <DocumentTextIcon className="mr-3 h-5 w-5" />
-            Templates
-          </button>
-
-          <div className="border-t border-gray-200 pt-4 mt-4">
+          {/* Separador e Assistente IA — só para gerente */}
+          {loggedUser.cargo === 'gerente' && (
+          <div className="border-t border-gray-200 pt-4 mt-2">
             <button
               onClick={() => setShowAIModal(true)}
               className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-apple bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-apple-sm"
             >
               <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1h3a3 3 0 003-3h1a1 1 0 001-1v-3a1 1 0 00-1-1H8a1 1 0 00-1 1v3a1 1 0 001 1h3zm-3 8a1 1 0 011-1h6a1 1 0 011 1v4a1 1 0 001 1h6a1 1 0 001-1v-4z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-2" />
               </svg>
               Assistente IA
             </button>
           </div>
+          )}
+
+          {/* Placeholder invisível para manter estrutura quando não é gerente */}
+          {loggedUser.cargo !== 'gerente' && (
+          <div className="border-t border-gray-200 pt-4 mt-2">
+            <p className="text-xs text-gray-400 text-center px-2">Logado como <span className="font-medium text-gray-600">{loggedUser.cargo === 'sdr' ? 'SDR' : 'Vendedor'}</span></p>
+          </div>
+          )}
+
         </nav>
 
         {/* Bottom section */}
@@ -1206,6 +1116,7 @@ function App() {
             {activeView === 'relatorios' && 'Relatórios e Gráficos'}
             {activeView === 'templates' && 'Templates de Mensagens'}
             {activeView === 'produtos' && 'Catálogo de Produtos'}
+            {activeView === 'pedidos' && 'Lançamento de Pedidos'}
           </h2>
           
           <div className="flex items-center space-x-3">
@@ -1378,19 +1289,19 @@ function App() {
                     />
                   </div>
 
-			  <div>
-			    <label className="block text-sm font-medium text-gray-700 mb-1">
-			      Endereço
-			    </label>
-			    <input
-			      type="text"
-			      name="endereco"
-			      value={formData.endereco}
-			      onChange={handleInputChange}
-			      className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-			      placeholder="Rua, número, bairro, cidade - UF"
-			    />
-			  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Endereço
+                    </label>
+                    <input
+                      type="text"
+                      name="endereco"
+                      value={formData.endereco}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="Rua, número, bairro, cidade - UF"
+                    />
+                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2973,7 +2884,7 @@ const SocialSearchView: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">O que você procura?</label>
-              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Ex: supermercados, restaurantes, hotéis..." className="w-full px-4 py-3 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Ex: supermercados, restaurantes, hotéis..." className="w-full px-4 py-3 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500" onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Região</label>
@@ -4280,6 +4191,315 @@ const ProdutosView: React.FC<{
               <button onClick={handleSave} disabled={!fNome.trim() || !fDescricao.trim() || !fPreco} className="px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 disabled:bg-gray-400 shadow-apple-sm">{editing ? 'Salvar' : 'Criar Produto'}</button>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Pedidos View
+function PedidosView({ pedidos, clientes, produtos, vendedores, loggedUser, onAddPedido, onUpdatePedido }: {
+  pedidos: Pedido[]
+  clientes: Cliente[]
+  produtos: Produto[]
+  vendedores: Vendedor[]
+  loggedUser: Vendedor
+  onAddPedido: (p: Pedido) => void
+  onUpdatePedido: (p: Pedido) => void
+}) {
+  const isGerente = loggedUser.cargo === 'gerente'
+  const [tab, setTab] = React.useState<'novo' | 'historico'>('novo')
+  const clientesDisponiveis = isGerente ? clientes : clientes.filter(c => c.vendedorId === loggedUser.id)
+  const produtosAtivos = produtos.filter(p => p.ativo)
+  const [selectedClienteId, setSelectedClienteId] = React.useState<number | ''>(clientesDisponiveis[0]?.id ?? '')
+  const [itensPedido, setItensPedido] = React.useState<ItemPedido[]>([])
+  const [observacoes, setObservacoes] = React.useState('')
+  const [searchProduto, setSearchProduto] = React.useState('')
+  const [filterCategoria, setFilterCategoria] = React.useState('')
+  const [pedidoEnviado, setPedidoEnviado] = React.useState<Pedido | null>(null)
+  const [filtroStatus, setFiltroStatus] = React.useState<string>('')
+  const [filtroCliente, setFiltroCliente] = React.useState<string>('')
+
+  const produtosFiltrados = produtosAtivos.filter(p => {
+    const matchSearch = p.nome.toLowerCase().includes(searchProduto.toLowerCase()) || (p.sku || '').toLowerCase().includes(searchProduto.toLowerCase())
+    const matchCat = !filterCategoria || p.categoria === filterCategoria
+    return matchSearch && matchCat
+  })
+
+  const totalPedido = itensPedido.reduce((sum, item) => sum + item.preco * item.quantidade, 0)
+
+  const getItemQtd = (produtoId: number) => itensPedido.find(i => i.produtoId === produtoId)?.quantidade ?? 0
+
+  const setItemQtd = (produto: Produto, qtd: number) => {
+    if (qtd <= 0) {
+      setItensPedido(prev => prev.filter(i => i.produtoId !== produto.id))
+    } else {
+      setItensPedido(prev => {
+        const existe = prev.find(i => i.produtoId === produto.id)
+        if (existe) return prev.map(i => i.produtoId === produto.id ? { ...i, quantidade: qtd } : i)
+        return [...prev, { produtoId: produto.id, nomeProduto: produto.nome, sku: produto.sku, unidade: produto.unidade, preco: produto.preco, quantidade: qtd }]
+      })
+    }
+  }
+
+  const handleEnviarPedido = (status: 'rascunho' | 'enviado') => {
+    if (!selectedClienteId || itensPedido.length === 0) return
+    const numero = `PED-${Date.now().toString().slice(-6)}`
+    const novoPedido: Pedido = {
+      id: Date.now(), numero, clienteId: Number(selectedClienteId), vendedorId: loggedUser.id,
+      itens: itensPedido, observacoes: observacoes.trim(), status,
+      dataCriacao: new Date().toISOString(),
+      dataEnvio: status === 'enviado' ? new Date().toISOString() : undefined,
+      totalValor: totalPedido
+    }
+    onAddPedido(novoPedido)
+    if (status === 'enviado') setPedidoEnviado(novoPedido)
+    setItensPedido([])
+    setObservacoes('')
+    setSelectedClienteId(clientesDisponiveis[0]?.id ?? '')
+  }
+
+  const pedidosFiltrados = pedidos
+    .filter(p => {
+      const matchStatus = !filtroStatus || p.status === filtroStatus
+      const matchCliente = !filtroCliente || String(p.clienteId) === filtroCliente
+      const matchVendedor = isGerente || p.vendedorId === loggedUser.id
+      return matchStatus && matchCliente && matchVendedor
+    })
+    .sort((a, b) => new Date(b.dataCriacao).getTime() - new Date(a.dataCriacao).getTime())
+
+  const statusBadge = (s: Pedido['status']) => ({ rascunho: 'bg-gray-100 text-gray-700', enviado: 'bg-blue-100 text-blue-800', confirmado: 'bg-green-100 text-green-800', cancelado: 'bg-red-100 text-red-800' }[s])
+  const statusLabel = (s: Pedido['status']) => ({ rascunho: '📝 Rascunho', enviado: '📤 Enviado', confirmado: '✅ Confirmado', cancelado: '❌ Cancelado' }[s])
+  const catLabel: Record<string, string> = { sacaria: 'Sacaria 25kg', okey_lac: 'Okey Lac 25kg', varejo_lacteo: 'Varejo Lácteo', cafe: 'Café', outros: 'Outros' }
+  const clienteSelecionado = clientes.find(c => c.id === Number(selectedClienteId))
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Lançamento de Pedidos</h1>
+          <p className="mt-1 text-sm text-gray-600">{isGerente ? 'Gerencie todos os pedidos da equipe' : `Olá, ${loggedUser.nome.split(' ')[0]}! Lance pedidos para seus clientes`}</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setTab('novo')} className={`px-4 py-2 rounded-apple text-sm font-medium transition-colors ${tab === 'novo' ? 'bg-primary-600 text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>➕ Novo Pedido</button>
+          <button onClick={() => setTab('historico')} className={`px-4 py-2 rounded-apple text-sm font-medium transition-colors ${tab === 'historico' ? 'bg-primary-600 text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>📋 Histórico ({pedidos.filter(p => isGerente || p.vendedorId === loggedUser.id).length})</button>
+        </div>
+      </div>
+
+      {pedidoEnviado && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-apple shadow-apple-lg max-w-md w-full p-8 text-center">
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Pedido Enviado!</h2>
+            <p className="text-3xl font-bold text-primary-600 mb-4">{pedidoEnviado.numero}</p>
+            <div className="bg-gray-50 rounded-apple p-4 text-left mb-6 space-y-1">
+              <p className="text-sm text-gray-700"><span className="font-medium">Cliente:</span> {clientes.find(c => c.id === pedidoEnviado.clienteId)?.razaoSocial}</p>
+              <p className="text-sm text-gray-700"><span className="font-medium">Itens:</span> {pedidoEnviado.itens.length} produto(s)</p>
+              <p className="text-sm text-gray-700"><span className="font-medium">Total:</span> R$ {pedidoEnviado.totalValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+              <p className="text-sm text-gray-700"><span className="font-medium">Data:</span> {new Date(pedidoEnviado.dataCriacao).toLocaleString('pt-BR')}</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => { setPedidoEnviado(null); setTab('historico') }} className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-apple hover:bg-gray-50 text-sm font-medium">Ver Histórico</button>
+              <button onClick={() => setPedidoEnviado(null)} className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-apple hover:bg-primary-700 text-sm font-medium">Novo Pedido</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'novo' && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-1 space-y-4">
+            <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-5">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">👤 Cliente</h3>
+              {clientesDisponiveis.length === 0 ? (
+                <p className="text-sm text-gray-500">Nenhum cliente atribuído a você.</p>
+              ) : (
+                <select value={selectedClienteId} onChange={(e) => setSelectedClienteId(e.target.value ? Number(e.target.value) : '')} className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+                  <option value="">Selecione um cliente...</option>
+                  {clientesDisponiveis.map(c => <option key={c.id} value={c.id}>{c.razaoSocial}</option>)}
+                </select>
+              )}
+              {clienteSelecionado && (
+                <div className="mt-3 p-3 bg-gray-50 rounded-apple border border-gray-200 space-y-1">
+                  <p className="text-xs text-gray-500">Contato: <span className="text-gray-800 font-medium">{clienteSelecionado.contatoNome}</span></p>
+                  <p className="text-xs text-gray-500">Tel: <span className="text-gray-800">{clienteSelecionado.contatoTelefone}</span></p>
+                  <p className="text-xs text-gray-500">Etapa: <span className="text-gray-800">{clienteSelecionado.etapa}</span></p>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-5">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">🛒 Carrinho ({itensPedido.length} {itensPedido.length === 1 ? 'item' : 'itens'})</h3>
+              {itensPedido.length === 0 ? (
+                <div className="text-center py-6 text-gray-400">
+                  <ShoppingCartIcon className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">Adicione produtos ao pedido</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {itensPedido.map(item => (
+                    <div key={item.produtoId} className="flex items-center justify-between p-2 bg-gray-50 rounded-apple border border-gray-200">
+                      <div className="flex-1 min-w-0 mr-2">
+                        <p className="text-xs font-medium text-gray-900 truncate">{item.nomeProduto}</p>
+                        <p className="text-xs text-gray-500">R$ {item.preco.toFixed(2).replace('.', ',')} / {item.unidade}</p>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button onClick={() => setItemQtd(produtos.find(p => p.id === item.produtoId)!, item.quantidade - 1)} className="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-700 font-bold text-sm">−</button>
+                        <span className="w-8 text-center text-sm font-semibold text-gray-900">{item.quantidade}</span>
+                        <button onClick={() => setItemQtd(produtos.find(p => p.id === item.produtoId)!, item.quantidade + 1)} className="w-6 h-6 rounded-full bg-primary-100 hover:bg-primary-200 flex items-center justify-center text-primary-700 font-bold text-sm">+</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {itensPedido.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Total ({itensPedido.reduce((s, i) => s + i.quantidade, 0)} unid.)</span>
+                  <span className="text-sm font-bold text-gray-900">R$ {totalPedido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-5">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">📝 Observações</h3>
+              <textarea value={observacoes} onChange={(e) => setObservacoes(e.target.value)} rows={3} placeholder="Condições de entrega, prazo, forma de pagamento..." className="w-full px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm resize-none" />
+            </div>
+
+            <div className="space-y-2">
+              <button onClick={() => handleEnviarPedido('enviado')} disabled={!selectedClienteId || itensPedido.length === 0} className="w-full py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 text-white font-semibold rounded-apple shadow-apple-sm transition-colors flex items-center justify-center gap-2">
+                <PaperAirplaneIcon className="h-5 w-5" />
+                Enviar Pedido — R$ {totalPedido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </button>
+              <button onClick={() => handleEnviarPedido('rascunho')} disabled={!selectedClienteId || itensPedido.length === 0} className="w-full py-2 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-40 text-gray-700 font-medium rounded-apple transition-colors text-sm">💾 Salvar como Rascunho</button>
+              {itensPedido.length > 0 && <button onClick={() => setItensPedido([])} className="w-full py-2 text-red-500 hover:text-red-700 text-sm font-medium transition-colors">🗑️ Limpar carrinho</button>}
+            </div>
+          </div>
+
+          <div className="xl:col-span-2">
+            <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-5">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">📦 Selecionar Produtos</h3>
+              <div className="flex flex-wrap gap-3 mb-4">
+                <input type="text" placeholder="Buscar por nome ou SKU..." value={searchProduto} onChange={(e) => setSearchProduto(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-apple focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm flex-1 min-w-48" />
+                <select value={filterCategoria} onChange={(e) => setFilterCategoria(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-apple text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                  <option value="">Todas categorias</option>
+                  <option value="sacaria">Sacaria 25kg</option>
+                  <option value="okey_lac">Okey Lac 25kg</option>
+                  <option value="varejo_lacteo">Varejo Lácteo</option>
+                  <option value="cafe">Café</option>
+                  <option value="outros">Outros</option>
+                </select>
+              </div>
+              <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+                {produtosFiltrados.length === 0 && <p className="text-center py-8 text-gray-400 text-sm">Nenhum produto encontrado</p>}
+                {produtosFiltrados.map(produto => {
+                  const qtd = getItemQtd(produto.id)
+                  const noCarrinho = qtd > 0
+                  return (
+                    <div key={produto.id} className={`flex items-center gap-4 p-3 rounded-apple border-2 transition-all ${noCarrinho ? 'border-primary-300 bg-primary-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+                      <div className="w-14 h-14 bg-gray-100 rounded-apple flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {produto.foto ? <img src={produto.foto} alt={produto.nome} className="w-full h-full object-cover" /> : <PhotoIcon className="h-7 w-7 text-gray-300" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{produto.nome}</p>
+                          {produto.destaque && <span className="px-1.5 py-0.5 text-[10px] font-bold bg-yellow-400 text-yellow-900 rounded-full flex-shrink-0">Destaque</span>}
+                        </div>
+                        <p className="text-xs text-gray-500">{catLabel[produto.categoria]}{produto.sku ? ` • ${produto.sku}` : ''}</p>
+                        <p className="text-sm font-bold text-primary-600 mt-0.5">R$ {produto.preco.toFixed(2).replace('.', ',')} <span className="text-xs font-normal text-gray-400">/{produto.unidade}</span></p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {noCarrinho ? (
+                          <>
+                            <button onClick={() => setItemQtd(produto, qtd - 1)} className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-700 font-bold">−</button>
+                            <span className="w-10 text-center font-bold text-gray-900">{qtd}</span>
+                            <button onClick={() => setItemQtd(produto, qtd + 1)} className="w-8 h-8 rounded-full bg-primary-600 hover:bg-primary-700 flex items-center justify-center text-white font-bold">+</button>
+                          </>
+                        ) : (
+                          <button onClick={() => setItemQtd(produto, 1)} className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-apple transition-colors">+ Adicionar</button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'historico' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-4 flex flex-wrap gap-3 items-center">
+            <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-apple text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+              <option value="">Todos os status</option>
+              <option value="rascunho">Rascunho</option>
+              <option value="enviado">Enviado</option>
+              <option value="confirmado">Confirmado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+            <select value={filtroCliente} onChange={(e) => setFiltroCliente(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-apple text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+              <option value="">Todos os clientes</option>
+              {(isGerente ? clientes : clientesDisponiveis).map(c => <option key={c.id} value={c.id}>{c.razaoSocial}</option>)}
+            </select>
+            <span className="text-sm text-gray-500 ml-auto">{pedidosFiltrados.length} pedido(s)</span>
+          </div>
+
+          {pedidosFiltrados.length === 0 ? (
+            <div className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-16 text-center">
+              <ShoppingCartIcon className="h-16 w-16 text-gray-200 mx-auto mb-4" />
+              <p className="text-gray-500 font-medium">Nenhum pedido encontrado</p>
+              <p className="text-sm text-gray-400 mt-1">Lance seu primeiro pedido clicando em "Novo Pedido"</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pedidosFiltrados.map(pedido => {
+                const cliente = clientes.find(c => c.id === pedido.clienteId)
+                const vendedor = vendedores.find(v => v.id === pedido.vendedorId)
+                return (
+                  <div key={pedido.id} className="bg-white rounded-apple shadow-apple-sm border border-gray-200 p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg font-bold text-gray-900">{pedido.numero}</span>
+                          <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${statusBadge(pedido.status)}`}>{statusLabel(pedido.status)}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          <span className="font-medium">{cliente?.razaoSocial || '—'}</span>
+                          {isGerente && vendedor && <span className="text-gray-400"> • {vendedor.nome}</span>}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">{new Date(pedido.dataCriacao).toLocaleString('pt-BR')}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-bold text-primary-600">R$ {pedido.totalValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        <p className="text-xs text-gray-400">{pedido.itens.length} produto(s)</p>
+                      </div>
+                    </div>
+                    <div className="border-t border-gray-100 pt-3 space-y-1">
+                      {pedido.itens.map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-sm">
+                          <span className="text-gray-700"><span className="font-medium">{item.quantidade}x</span> {item.nomeProduto}{item.sku && <span className="text-gray-400 text-xs ml-1">({item.sku})</span>}</span>
+                          <span className="text-gray-900 font-medium">R$ {(item.preco * item.quantidade).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      ))}
+                      {pedido.observacoes && <p className="text-xs text-gray-500 mt-2 italic">Obs: {pedido.observacoes}</p>}
+                    </div>
+                    {isGerente && pedido.status === 'enviado' && (
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                        <button onClick={() => onUpdatePedido({ ...pedido, status: 'confirmado' })} className="px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-apple hover:bg-green-700">✅ Confirmar</button>
+                        <button onClick={() => onUpdatePedido({ ...pedido, status: 'cancelado' })} className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 text-xs font-semibold rounded-apple hover:bg-red-100">❌ Cancelar</button>
+                      </div>
+                    )}
+                    {pedido.status === 'rascunho' && pedido.vendedorId === loggedUser.id && (
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                        <button onClick={() => onUpdatePedido({ ...pedido, status: 'enviado', dataEnvio: new Date().toISOString() })} className="px-3 py-1.5 bg-primary-600 text-white text-xs font-semibold rounded-apple hover:bg-primary-700">📤 Enviar agora</button>
+                        <button onClick={() => onUpdatePedido({ ...pedido, status: 'cancelado' })} className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 text-xs font-semibold rounded-apple hover:bg-red-100">🗑️ Descartar</button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
